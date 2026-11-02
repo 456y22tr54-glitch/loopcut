@@ -102,6 +102,10 @@
   .btn-play:disabled { background:#c5cfe6; color:#fff; cursor:not-allowed; }
   .btn-reset { background:#fff; color:var(--text); border:1px solid var(--line-strong); }
   .btn-reset:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-save { background:#fff; color:var(--accent); border:1px solid var(--accent); }
+  .btn-save:hover:not(:disabled) { background:var(--accent-soft); }
+  .btn-save:disabled { color:#a9b4c8; border-color:var(--line-strong); cursor:not-allowed; }
+  .main-btn { padding-left:4px; padding-right:4px; }
   .status { margin-top:14px; text-align:center; font-size:12px; color:var(--muted); min-height:16px; }
 
   .saved { margin-top:26px; padding-top:20px; border-top:1px solid var(--line); }
@@ -223,6 +227,7 @@
   <div class="buttons">
     <button class="main-btn btn-play" id="playBtn" disabled>再生</button>
     <button class="main-btn btn-reset" id="resetBtn">区間の先頭へ</button>
+    <button class="main-btn btn-save" id="quickSaveBtn" disabled>登録</button>
   </div>
   <div class="status" id="statusText">STANDBY</div>
 
@@ -482,6 +487,7 @@
 
   // ---------- saved list ----------
   const savedList = $('savedList'), saveBtn = $('saveBtn'), overwriteBtn = $('overwriteBtn'), saveName = $('saveName');
+  const quickSave = $('quickSaveBtn');
   let items = [];
 
   function loadItems() {
@@ -514,8 +520,15 @@
   function updateSaveButtons() {
     const canSave = !!(currentSource && duration);
     saveBtn.disabled = !canSave;
-    overwriteBtn.classList.toggle('hidden', !(canSave && activeId && items.some(i => i.id === activeId)));
+    const hasActive = !!(activeId && items.some(i => i.id === activeId));
+    overwriteBtn.classList.toggle('hidden', !(canSave && hasActive));
+    quickSave.disabled = !canSave;
+    quickSave.textContent = hasActive ? '上書き保存' : '登録';
   }
+  quickSave.addEventListener('click', () => {
+    const hasActive = !!(activeId && items.some(i => i.id === activeId));
+    (hasActive ? overwriteBtn : saveBtn).click();
+  });
 
   function renderList() {
     $('savedCount').textContent = items.length ? items.length + '件' : '';
@@ -551,6 +564,7 @@
       row.append(main, ren, del);
       savedList.appendChild(row);
     });
+    updateSaveButtons();
   }
 
   function loadItem(id) {

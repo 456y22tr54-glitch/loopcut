@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LOOPCUT — Segment Repeat Player</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap');
+  :root {
+    --bg:#0b0f14; --panel:#12181f; --panel-2:#161e27; --line:#212b35;
+    --cyan:#4fe0d0; --amber:#ffb454; --text:#e7edf2; --muted:#6b7784;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; min-height:100vh;
+    background: radial-gradient(circle at 50% -10%, #142029 0%, var(--bg) 55%);
+    color:var(--text);
+    font-family:'Inter',-apple-system,"Hiragino Sans","Yu Gothic",sans-serif;
+    display:flex; justify-content:center; padding:32px 16px 60px;
+  }
+  .device {
+    width:100%; max-width:560px;
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--line); border-radius:24px; padding:26px 22px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.03);
+  }
+  .brand { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:18px; }
+  .brand .name { font-family:'Space Mono',monospace; font-size:13px; letter-spacing:3px; color:var(--cyan); text-transform:uppercase; }
+  .brand .tag { font-size:10px; color:var(--muted); letter-spacing:1px; }
+
+  .tabs { display:flex; gap:6px; margin-bottom:14px; }
+  .tab-btn { flex:1; padding:9px 0; text-align:center; background:#0e141a; border:1px solid var(--line);
+    border-radius:9px; color:var(--muted); font-size:12px; cursor:pointer; user-select:none; }
+  .tab-btn.active { border-color:var(--cyan); color:var(--cyan); }
+  .source-panel { margin-bottom:16px; }
+  .hidden { display:none !important; }
+
+  .url-row { display:flex; gap:8px; }
+  .url-row input[type=text] { flex:1; min-width:0; padding:10px 12px; border:1px solid var(--line); border-radius:10px;
+    background:#0e141a; color:var(--text); font-size:13px; outline:none; }
+  .url-row input[type=text]:focus { border-color:var(--cyan); }
+  .url-row button { padding:0 16px; border-radius:10px; border:none; background:var(--cyan); color:#04181a;
+    font-size:12.5px; font-weight:600; cursor:pointer; }
+  .hint { font-size:11px; color:var(--muted); margin-top:7px; line-height:1.5; }
+
+  .file-drop { display:block; border:1.5px dashed var(--line); border-radius:14px; padding:22px 12px; text-align:center;
+    color:var(--muted); font-size:12.5px; cursor:pointer; }
+  .file-drop:hover, .file-drop.drag { border-color:var(--cyan); color:var(--cyan); }
+  .file-drop input { display:none; }
+
+  .stage { background:#05080b; border-radius:14px; overflow:hidden; margin-bottom:14px; aspect-ratio:16/9; position:relative; }
+  .stage video, .stage #ytHost, .stage iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+  .stage video { object-fit:contain; background:#000; }
+  .placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    color:var(--muted); font-size:12px; letter-spacing:1px; text-align:center; padding:12px; pointer-events:none; }
+
+  .timeline-wrap { margin-bottom:16px; }
+  .timeline { position:relative; height:40px; background:#0e141a; border:1px solid var(--line); border-radius:10px;
+    margin-top:8px; cursor:pointer; touch-action:none; }
+  .loop-region { position:absolute; top:0; bottom:0; background:rgba(79,224,208,.16); pointer-events:none; }
+  .playhead { position:absolute; top:0; bottom:0; width:2px; background:var(--amber); box-shadow:0 0 6px rgba(255,180,84,.8); pointer-events:none; }
+  .handle { position:absolute; top:-1px; bottom:-1px; width:12px; margin-left:-6px; background:var(--cyan); border-radius:4px; cursor:ew-resize; }
+  .time-labels { display:flex; justify-content:space-between; font-family:'Space Mono',monospace; font-size:10px; color:var(--muted); margin-top:6px; }
+
+  .fields { display:flex; gap:10px; margin-bottom:8px; }
+  .field { flex:1; }
+  .field label.cap, .cap { display:block; font-size:10.5px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  .field-row { display:flex; gap:6px; }
+  input[type=number] { width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:9px; background:#0e141a;
+    color:var(--text); font-family:'Space Mono',monospace; font-size:14px; outline:none; }
+  input[type=number]:focus { border-color:var(--cyan); }
+  .set-btn { padding:0 10px; border-radius:9px; border:1px solid var(--line); background:transparent; color:var(--muted);
+    font-size:11px; cursor:pointer; white-space:nowrap; }
+  .set-btn:hover { color:var(--cyan); border-color:var(--cyan); }
+
+  .speed { margin:16px 0 4px; }
+  .speed-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
+  .speed-head .val { font-family:'Space Mono',monospace; font-size:15px; color:var(--cyan); font-weight:700; }
+  input[type=range] { -webkit-appearance:none; width:100%; height:4px; border-radius:2px; background:var(--line); outline:none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
+    background:var(--cyan); box-shadow:0 0 0 4px rgba(79,224,208,.15); cursor:pointer; }
+  input[type=range]::-moz-range-thumb { width:18px; height:18px; border:none; border-radius:50%; background:var(--cyan);
+    box-shadow:0 0 0 4px rgba(79,224,208,.15); cursor:pointer; }
+  .presets { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+  .preset { flex:1; min-width:48px; padding:7px 0; text-align:center; font-family:'Space Mono',monospace; font-size:12px;
+    border:1px solid var(--line); border-radius:8px; color:var(--muted); background:transparent; cursor:pointer; }
+  .preset.active { border-color:var(--cyan); color:var(--cyan); }
+
+  .toggle-row { display:flex; align-items:center; justify-content:space-between; margin:16px 0 18px; font-size:12px; color:var(--muted); }
+  .switch { position:relative; width:42px; height:22px; background:var(--line); border-radius:12px; cursor:pointer; transition:background .15s; }
+  .switch.on { background:var(--cyan); }
+  .switch .knob { position:absolute; top:2px; left:2px; width:18px; height:18px; background:#0b0f14; border-radius:50%; transition:left .15s; }
+  .switch.on .knob { left:22px; background:#04181a; }
+
+  .buttons { display:flex; gap:10px; }
+  .main-btn { flex:1; padding:15px 0; border:none; border-radius:12px; font-size:14px; font-weight:600; letter-spacing:1px; cursor:pointer; font-family:inherit; }
+  .btn-play { background:var(--cyan); color:#04181a; box-shadow:0 8px 20px -6px rgba(79,224,208,.5); }
+  .btn-play:disabled { background:#26343b; color:var(--muted); box-shadow:none; cursor:not-allowed; }
+  .btn-reset { background:transparent; color:var(--text); border:1px solid var(--line); }
+  .status { margin-top:14px; text-align:center; font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1px; color:var(--muted); min-height:16px; }
+</style>
+</head>
+<body>
+<div class="device">
+  <div class="brand">
+    <div class="name">◆ Loopcut</div>
+    <div class="tag">segment repeat player</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab-btn active" data-tab="yt">YouTube</div>
+    <div class="tab-btn" data-tab="file">ファイル</div>
+    <div class="tab-btn" data-tab="url">動画URL</div>
+  </div>
+
+  <div class="source-panel" id="panel-yt">
+    <div class="url-row">
+      <input type="text" id="ytInput" placeholder="YouTubeのURLまたは動画IDを貼り付け">
+      <button id="ytLoadBtn">読込</button>
+    </div>
+    <div class="hint">youtube.com / youtu.be / shorts のURLに対応。埋め込みが禁止されている動画は再生できません。</div>
+  </div>
+
+  <div class="source-panel hidden" id="panel-file">
+    <label class="file-drop" id="dropZone">
+      動画ファイルをドラッグ＆ドロップ、またはタップして選択
+      <input type="file" id="fileInput" accept="video/*">
+    </label>
+  </div>
+
+  <div class="source-panel hidden" id="panel-url">
+    <div class="url-row">
+      <input type="text" id="urlInput" placeholder="動画ファイルの直接URL（OneDrive等）">
+      <button id="urlLoadBtn">読込</button>
+    </div>
+    <div class="hint">OneDriveの共有リンクは、末尾を ?download=1 にすると直リンクになることがあります。</div>
+  </div>
+
+  <div class="stage">
+    <div id="ytHost" class="hidden"></div>
+    <video id="video" class="hidden" playsinline controls></video>
+    <div class="placeholder" id="placeholder">動画を読み込んでください</div>
+  </div>
+
+  <div class="timeline-wrap">
+    <div class="timeline" id="timeline">
+      <div class="loop-region" id="loopRegion"></div>
+      <div class="handle" id="handleStart"></div>
+      <div class="handle" id="handleEnd"></div>
+      <div class="playhead" id="playhead"></div>
+    </div>
+    <div class="time-labels"><span id="labelNow">0:00.0</span><span id="labelTotal">0:00.0</span></div>
+  </div>
+
+  <div class="fields">
+    <div class="field">
+      <label class="cap">開始（秒）</label>
+      <div class="field-row">
+        <input type="number" id="startInput" min="0" step="0.1" value="0">
+        <button class="set-btn" id="setStartBtn">現在位置</button>
+      </div>
+    </div>
+    <div class="field">
+      <label class="cap">終了（秒）</label>
+      <div class="field-row">
+        <input type="number" id="endInput" min="0" step="0.1" value="10">
+        <button class="set-btn" id="setEndBtn">現在位置</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="speed">
+    <div class="speed-head"><span class="cap" style="margin:0">再生速度</span><span class="val" id="speedVal">1.00×</span></div>
+    <input type="range" id="speedSlider" min="0.25" max="2" step="0.05" value="1">
+    <div class="presets" id="presets">
+      <button class="preset" data-r="0.25">0.25</button>
+      <button class="preset" data-r="0.5">0.5</button>
+      <button class="preset" data-r="0.75">0.75</button>
+      <button class="preset active" data-r="1">1.0</button>
+      <button class="preset" data-r="1.25">1.25</button>
+      <button class="preset" data-r="1.5">1.5</button>
+    </div>
+  </div>
+
+  <div class="toggle-row">
+    <span>区間をリピート再生</span>
+    <div class="switch on" id="loopSwitch"><div class="knob"></div></div>
+  </div>
+
+  <div class="buttons">
+    <button class="main-btn btn-play" id="playBtn" disabled>再生</button>
+    <button class="main-btn btn-reset" id="resetBtn">区間の先頭へ</button>
+  </div>
+  <div class="status" id="statusText">STANDBY</div>
+</div>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const video = $('video'), ytHost = $('ytHost'), placeholder = $('placeholder');
+  const startInput = $('startInput'), endInput = $('endInput');
+  const timeline = $('timeline'), loopRegion = $('loopRegion');
+  const handleStart = $('handleStart'), handleEnd = $('handleEnd'), playhead = $('playhead');
+  const playBtn = $('playBtn'), statusText = $('statusText');
+  const speedSlider = $('speedSlider'), speedVal = $('speedVal');
+
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const fmt = t => { if (!isFinite(t)) t = 0; const m = Math.floor(t/60); return m + ':' + (t%60).toFixed(1).padStart(4,'0'); };
+  const setStatus = s => statusText.textContent = s;
+
+  let mode = null;            // 'yt' | 'video'
+  let yt = null, ytReady = false, ytApiReady = false, pendingVideoId = null;
+  let duration = 0, loopOn = true, rate = 1, dragging = null;
+
+  // ---------- player adapter ----------
+  const P = {
+    time() { return mode === 'yt' ? (yt && yt.getCurrentTime ? yt.getCurrentTime() : 0) : video.currentTime; },
+    seek(t) { mode === 'yt' ? yt.seekTo(t, true) : (video.currentTime = t); },
+    play() { mode === 'yt' ? yt.playVideo() : video.play(); },
+    pause() { mode === 'yt' ? yt.pauseVideo() : video.pause(); },
+    playing() { return mode === 'yt' ? (yt && yt.getPlayerState && yt.getPlayerState() === 1) : !video.paused; },
+    setRate(r) {
+      if (mode === 'yt' && yt && yt.setPlaybackRate) yt.setPlaybackRate(r);
+      else if (mode === 'video') video.playbackRate = r;
+    }
+  };
+
+  // ---------- tabs ----------
+  document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(x => x.classList.toggle('active', x === b));
+    ['yt','file','url'].forEach(k => $('panel-' + k).classList.toggle('hidden', k !== b.dataset.tab));
+  }));
+
+  // ---------- common load state ----------
+  function onLoaded(d) {
+    duration = d || 0;
+    $('labelTotal').textContent = fmt(duration);
+    startInput.value = 0;
+    endInput.value = Math.min(10, duration).toFixed(1);
+    playBtn.disabled = false;
+    playBtn.textContent = '再生';
+    placeholder.classList.add('hidden');
+    P.setRate(rate);
+    renderRegion();
+    setStatus('READY');
+  }
+
+  // ---------- YouTube ----------
+  window.onYouTubeIframeAPIReady = () => {
+    ytApiReady = true;
+    if (pendingVideoId) { loadYouTube(pendingVideoId); pendingVideoId = null; }
+  };
+
+  function parseYouTubeId(s) {
+    s = s.trim();
+    if (/^[\w-]{11}$/.test(s)) return s;
+    try {
+      const u = new URL(s);
+      if (u.hostname.includes('youtu.be')) return u.pathname.slice(1).slice(0, 11);
+      if (u.searchParams.get('v')) return u.searchParams.get('v');
+      const m = u.pathname.match(/\/(shorts|embed|live)\/([\w-]{11})/);
+      if (m) return m[2];
+    } catch (e) {}
+    return null;
+  }
+
+  function loadYouTube(id) {
+    if (!ytApiReady) {
+      pendingVideoId = id;
+      setStatus('YouTube APIを読み込み中… ネットワークをご確認ください');
+      return;
+    }
+    video.pause(); video.classList.add('hidden');
+    ytHost.classList.remove('hidden');
+    mode = 'yt';
+    playBtn.disabled = true;
+    setStatus('LOADING');
+    if (yt && ytReady) { yt.cueVideoById(id); return; }
+    // The host div is replaced by the iframe once; keep a fresh child container
+    ytHost.innerHTML = '<div id="ytInner"></div>';
+    yt = new YT.Player('ytInner', {
+      videoId: id,
+      playerVars: { playsinline: 1, rel: 0, modestbranding: 1 },
+      events: {
+        onReady: () => { ytReady = true; ytReadyCheck(); },
+        onStateChange: onYtState,
+        onError: e => {
+          const msg = {2:'URLが不正です',5:'再生できない動画です',100:'動画が見つかりません',101:'埋め込みが許可されていません',150:'埋め込みが許可されていません',153:'実行環境のオリジンが不正です（ファイル直開きでは動かない場合があります）'};
+          setStatus('ERROR: ' + (msg[e.data] || ('コード ' + e.data)));
+          placeholder.classList.remove('hidden'); placeholder.textContent = '読み込みエラー';
+        }
+      }
+    });
+  }
+
+  function ytReadyCheck() {
+    const d = yt.getDuration();
+    if (d > 0) onLoaded(d); else setTimeout(ytReadyCheck, 200);
+  }
+
+  function onYtState(e) {
+    // 5 = cued, 1 = playing, 2 = paused, 0 = ended
+    if (e.data === 5) ytReadyCheck();
+    if (e.data === 1) { playBtn.textContent = '一時停止'; setStatus('PLAYING'); P.setRate(rate); }
+    if (e.data === 2) { playBtn.textContent = '再生'; setStatus('PAUSED'); }
+    if (e.data === 0) {
+      if (loopOn) { P.seek(clamp(parseFloat(startInput.value) || 0, 0, duration)); P.play(); }
+      else { playBtn.textContent = '再生'; setStatus('ENDED'); }
+    }
+  }
+
+  $('ytLoadBtn').addEventListener('click', () => {
+    const id = parseYouTubeId($('ytInput').value);
+    if (!id) { setStatus('ERROR: YouTubeのURLを認識できません'); return; }
+    loadYouTube(id);
+  });
+  $('ytInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('ytLoadBtn').click(); });
+
+  // ---------- local file / direct URL ----------
+  function loadVideoSrc(src) {
+    if (yt && ytReady) yt.pauseVideo();
+    ytHost.classList.add('hidden');
+    video.classList.remove('hidden');
+    mode = 'video';
+    playBtn.disabled = true;
+    placeholder.classList.add('hidden');
+    video.src = src;
+    setStatus('LOADING');
+  }
+  $('fileInput').addEventListener('change', e => { const f = e.target.files[0]; if (f) loadVideoSrc(URL.createObjectURL(f)); });
+  const dz = $('dropZone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag'); const f = e.dataTransfer.files[0]; if (f) loadVideoSrc(URL.createObjectURL(f)); });
+  $('urlLoadBtn').addEventListener('click', () => { const u = $('urlInput').value.trim(); if (u) loadVideoSrc(u); });
+
+  video.addEventListener('loadedmetadata', () => onLoaded(video.duration));
+  video.addEventListener('play', () => { playBtn.textContent = '一時停止'; setStatus('PLAYING'); });
+  video.addEventListener('pause', () => { playBtn.textContent = '再生'; setStatus('PAUSED'); });
+  video.addEventListener('error', () => {
+    setStatus('ERROR: 読み込みに失敗しました（URLの権限・形式を確認）');
+    placeholder.classList.remove('hidden'); placeholder.textContent = '読み込みエラー';
+  });
+
+  // ---------- region / timeline ----------
+  function getRange() {
+    const s = clamp(parseFloat(startInput.value) || 0, 0, duration);
+    const e = clamp(parseFloat(endInput.value) || duration, 0, duration);
+    return [s, e];
+  }
+  function renderRegion() {
+    if (!duration) return;
+    const [s, e] = getRange();
+    const l = s / duration * 100, r = e / duration * 100;
+    loopRegion.style.left = l + '%';
+    loopRegion.style.width = Math.max(0, r - l) + '%';
+    handleStart.style.left = l + '%';
+    handleEnd.style.left = r + '%';
+  }
+  startInput.addEventListener('input', renderRegion);
+  endInput.addEventListener('input', renderRegion);
+  $('setStartBtn').addEventListener('click', () => { startInput.value = P.time().toFixed(1); renderRegion(); });
+  $('setEndBtn').addEventListener('click', () => { endInput.value = P.time().toFixed(1); renderRegion(); });
+
+  function tOf(clientX) {
+    const r = timeline.getBoundingClientRect();
+    return clamp((clientX - r.left) / r.width, 0, 1) * duration;
+  }
+  function pointerDown(x, target) {
+    if (!duration) return;
+    if (target === handleStart) dragging = 'start';
+    else if (target === handleEnd) dragging = 'end';
+    else {
+      const t = tOf(x), [s, e] = getRange(), tol = duration * 0.03;
+      if (Math.abs(t - s) < tol) dragging = 'start';
+      else if (Math.abs(t - e) < tol) dragging = 'end';
+      else P.seek(t);
+    }
+  }
+  function pointerMove(x) {
+    if (!dragging || !duration) return;
+    const t = tOf(x), [s, e] = getRange();
+    if (dragging === 'start') startInput.value = clamp(t, 0, e).toFixed(1);
+    else endInput.value = clamp(t, s, duration).toFixed(1);
+    renderRegion();
+  }
+  timeline.addEventListener('pointerdown', e => { timeline.setPointerCapture(e.pointerId); pointerDown(e.clientX, e.target); });
+  timeline.addEventListener('pointermove', e => pointerMove(e.clientX));
+  timeline.addEventListener('pointerup', () => dragging = null);
+  timeline.addEventListener('pointercancel', () => dragging = null);
+
+  // ---------- speed ----------
+  function setRate(r) {
+    rate = clamp(Math.round(r * 100) / 100, 0.25, 2);
+    speedSlider.value = rate;
+    speedVal.textContent = rate.toFixed(2) + '×';
+    document.querySelectorAll('.preset').forEach(b => b.classList.toggle('active', parseFloat(b.dataset.r) === rate));
+    if (mode) P.setRate(rate);
+  }
+  speedSlider.addEventListener('input', () => setRate(parseFloat(speedSlider.value)));
+  document.querySelectorAll('.preset').forEach(b => b.addEventListener('click', () => setRate(parseFloat(b.dataset.r))));
+
+  // ---------- controls ----------
+  $('loopSwitch').addEventListener('click', function () { loopOn = !loopOn; this.classList.toggle('on', loopOn); });
+
+  playBtn.addEventListener('click', () => {
+    if (!mode) return;
+    if (P.playing()) { P.pause(); return; }
+    const [s, e] = getRange(), t = P.time();
+    if (t < s || t >= e - 0.05) P.seek(s);
+    P.play();
+    P.setRate(rate);
+  });
+  $('resetBtn').addEventListener('click', () => { if (mode) P.seek(getRange()[0]); });
+
+  // ---------- loop watcher (also drives the playhead) ----------
+  setInterval(() => {
+    if (!mode || !duration) return;
+    const t = P.time();
+    playhead.style.left = (clamp(t / duration, 0, 1) * 100) + '%';
+    $('labelNow').textContent = fmt(t);
+    if (!P.playing()) return;
+    const [s, e] = getRange();
+    if (e > s && t >= e) {
+      if (loopOn) P.seek(s);
+      else P.pause();
+    }
+  }, 50);
+})();
+</script>
+</body>
+</html>

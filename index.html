@@ -248,7 +248,6 @@
   </div>
 </div>
 
-<script src="https://www.youtube.com/iframe_api"></script>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
@@ -268,7 +267,7 @@
   let duration = 0, loopOn = true, rate = 1, dragging = null;
   let currentSource = null;     // { type:'yt'|'url', ref }
   let pendingSettings = null;   // applied once the video has loaded
-  let activeId = null, loadingFromList = false;
+  let activeId = null, loadingFromList = false, pendingKeep = false;
   const STORE_KEY = 'loopcut.items.v1';
 
   // ---------- player adapter ----------
@@ -314,10 +313,16 @@
   }
 
   // ---------- YouTube ----------
-  window.onYouTubeIframeAPIReady = () => {
+  function markApiReady() {
+    if (ytApiReady) return;
     ytApiReady = true;
-    if (pendingVideoId) { loadYouTube(pendingVideoId); pendingVideoId = null; }
-  };
+    if (pendingVideoId) {
+      const id = pendingVideoId; pendingVideoId = null;
+      loadingFromList = pendingKeep;
+      try { loadYouTube(id); } finally { loadingFromList = false; }
+    }
+  }
+  window.onYouTubeIframeAPIReady = markApiReady;
 
   function parseYouTubeId(s) {
     s = s.trim();
@@ -337,6 +342,7 @@
     if (!loadingFromList) { activeId = null; renderList(); }
     if (!ytApiReady) {
       pendingVideoId = id;
+      pendingKeep = loadingFromList;
       setStatus('YouTube APIを読み込み中… ネットワークをご確認ください');
       return;
     }
@@ -644,6 +650,19 @@
 
   loadItems();
   renderList();
+
+  // ---------- YouTube API loader (callback is defined first; polling + retries cover missed events) ----------
+  let apiTries = 0;
+  function injectYtApi() {
+    apiTries++;
+    const s = document.createElement('script');
+    s.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(s);
+  }
+  if (window.YT && YT.Player) markApiReady(); else injectYtApi();
+  setInterval(() => { if (!ytApiReady && window.YT && YT.Player) markApiReady(); }, 500);
+  setTimeout(() => { if (!ytApiReady && apiTries < 2) injectYtApi(); }, 6000);
+  setTimeout(() => { if (!ytApiReady && apiTries < 3) injectYtApi(); }, 14000);
 
   // ---------- loop watcher (also drives the playhead) ----------
   setInterval(() => {

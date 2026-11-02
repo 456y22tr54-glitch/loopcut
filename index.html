@@ -5,106 +5,139 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LOOPCUT — Segment Repeat Player</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
   :root {
-    --bg:#0b0f14; --panel:#12181f; --panel-2:#161e27; --line:#212b35;
-    --cyan:#4fe0d0; --amber:#ffb454; --text:#e7edf2; --muted:#6b7784;
+    --bg:#f2f4f8; --panel:#ffffff; --field:#f7f8fb; --line:#dfe4ec; --line-strong:#c9d1dd;
+    --accent:#2457d6; --accent-dark:#1b44ad; --accent-soft:#e8eefc; --mark:#e8590c;
+    --text:#18212d; --muted:#667385; --danger:#d1383d;
   }
   * { box-sizing: border-box; }
   body {
-    margin:0; min-height:100vh;
-    background: radial-gradient(circle at 50% -10%, #142029 0%, var(--bg) 55%);
-    color:var(--text);
-    font-family:'Inter',-apple-system,"Hiragino Sans","Yu Gothic",sans-serif;
+    margin:0; min-height:100vh; background:var(--bg); color:var(--text);
+    font-family:'Inter','Noto Sans JP',-apple-system,"Hiragino Sans","Yu Gothic",sans-serif;
+    font-variant-numeric:tabular-nums;
     display:flex; justify-content:center; padding:32px 16px 60px;
   }
   .device {
-    width:100%; max-width:560px;
-    background:linear-gradient(180deg,var(--panel),var(--panel-2));
-    border:1px solid var(--line); border-radius:24px; padding:26px 22px;
-    box-shadow:0 30px 60px -20px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.03);
+    width:100%; max-width:600px; background:var(--panel);
+    border:1px solid var(--line); border-radius:16px; padding:26px 24px 28px;
+    box-shadow:0 1px 2px rgba(24,33,45,.04), 0 12px 32px -12px rgba(24,33,45,.12);
   }
-  .brand { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:18px; }
-  .brand .name { font-family:'Space Mono',monospace; font-size:13px; letter-spacing:3px; color:var(--cyan); text-transform:uppercase; }
-  .brand .tag { font-size:10px; color:var(--muted); letter-spacing:1px; }
+  .brand { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--line); }
+  .brand .name { font-size:16px; font-weight:700; letter-spacing:.2px; color:var(--text); display:flex; align-items:center; gap:10px; }
+  .brand .name::before { content:""; width:10px; height:10px; border-radius:3px; background:var(--accent); display:inline-block; }
+  .brand .tag { font-size:12px; color:var(--muted); }
 
-  .tabs { display:flex; gap:6px; margin-bottom:14px; }
-  .tab-btn { flex:1; padding:9px 0; text-align:center; background:#0e141a; border:1px solid var(--line);
-    border-radius:9px; color:var(--muted); font-size:12px; cursor:pointer; user-select:none; }
-  .tab-btn.active { border-color:var(--cyan); color:var(--cyan); }
+  .tabs { display:flex; gap:4px; margin-bottom:14px; padding:4px; background:var(--field); border:1px solid var(--line); border-radius:10px; }
+  .tab-btn { flex:1; padding:8px 0; text-align:center; background:transparent; border:1px solid transparent;
+    border-radius:7px; color:var(--muted); font-size:13px; font-weight:500; cursor:pointer; user-select:none; }
+  .tab-btn:hover { color:var(--text); }
+  .tab-btn.active { background:#fff; border-color:var(--line); color:var(--accent); font-weight:600; box-shadow:0 1px 2px rgba(24,33,45,.06); }
   .source-panel { margin-bottom:16px; }
   .hidden { display:none !important; }
 
   .url-row { display:flex; gap:8px; }
-  .url-row input[type=text] { flex:1; min-width:0; padding:10px 12px; border:1px solid var(--line); border-radius:10px;
-    background:#0e141a; color:var(--text); font-size:13px; outline:none; }
-  .url-row input[type=text]:focus { border-color:var(--cyan); }
-  .url-row button { padding:0 16px; border-radius:10px; border:none; background:var(--cyan); color:#04181a;
-    font-size:12.5px; font-weight:600; cursor:pointer; }
-  .hint { font-size:11px; color:var(--muted); margin-top:7px; line-height:1.5; }
+  .url-row input[type=text] { flex:1; min-width:0; padding:10px 12px; border:1px solid var(--line-strong); border-radius:8px;
+    background:#fff; color:var(--text); font-size:14px; outline:none; font-family:inherit; }
+  .url-row input[type=text]:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  .url-row button { padding:0 20px; border-radius:8px; border:none; background:var(--accent); color:#fff;
+    font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
+  .url-row button:hover { background:var(--accent-dark); }
+  .hint { font-size:12px; color:var(--muted); margin-top:8px; line-height:1.55; }
 
-  .file-drop { display:block; border:1.5px dashed var(--line); border-radius:14px; padding:22px 12px; text-align:center;
-    color:var(--muted); font-size:12.5px; cursor:pointer; }
-  .file-drop:hover, .file-drop.drag { border-color:var(--cyan); color:var(--cyan); }
+  .file-drop { display:block; border:1.5px dashed var(--line-strong); border-radius:10px; padding:24px 12px; text-align:center;
+    color:var(--muted); font-size:13px; cursor:pointer; background:var(--field); }
+  .file-drop:hover, .file-drop.drag { border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
   .file-drop input { display:none; }
 
-  .stage { background:#05080b; border-radius:14px; overflow:hidden; margin-bottom:14px; aspect-ratio:16/9; position:relative; }
+  .stage { background:#0d1117; border-radius:10px; overflow:hidden; margin-bottom:14px; aspect-ratio:16/9; position:relative; border:1px solid var(--line); }
   .stage video, .stage #ytHost, .stage iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
   .stage video { object-fit:contain; background:#000; }
   .placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    color:var(--muted); font-size:12px; letter-spacing:1px; text-align:center; padding:12px; pointer-events:none; }
+    color:#8b97a8; font-size:13px; text-align:center; padding:12px; pointer-events:none; }
 
-  .timeline-wrap { margin-bottom:16px; }
-  .timeline { position:relative; height:40px; background:#0e141a; border:1px solid var(--line); border-radius:10px;
+  .timeline-wrap { margin-bottom:18px; }
+  .timeline { position:relative; height:40px; background:var(--field); border:1px solid var(--line-strong); border-radius:8px;
     margin-top:8px; cursor:pointer; touch-action:none; }
-  .loop-region { position:absolute; top:0; bottom:0; background:rgba(79,224,208,.16); pointer-events:none; }
-  .playhead { position:absolute; top:0; bottom:0; width:2px; background:var(--amber); box-shadow:0 0 6px rgba(255,180,84,.8); pointer-events:none; }
-  .handle { position:absolute; top:-1px; bottom:-1px; width:12px; margin-left:-6px; background:var(--cyan); border-radius:4px; cursor:ew-resize; }
-  .time-labels { display:flex; justify-content:space-between; font-family:'Space Mono',monospace; font-size:10px; color:var(--muted); margin-top:6px; }
+  .loop-region { position:absolute; top:0; bottom:0; background:rgba(36,87,214,.14); border-top:2px solid var(--accent); border-bottom:2px solid var(--accent); pointer-events:none; }
+  .playhead { position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--mark); pointer-events:none; }
+  .handle { position:absolute; top:-3px; bottom:-3px; width:10px; margin-left:-5px; background:var(--accent); border:2px solid #fff; border-radius:5px; cursor:ew-resize; box-shadow:0 1px 3px rgba(24,33,45,.3); }
+  .time-labels { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-top:6px; }
 
-  .fields { display:flex; gap:10px; margin-bottom:8px; }
+  .fields { display:flex; gap:12px; margin-bottom:8px; }
   .field { flex:1; }
-  .field label.cap, .cap { display:block; font-size:10.5px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  .field label.cap, .cap { display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px; }
   .field-row { display:flex; gap:6px; }
-  input[type=number] { width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:9px; background:#0e141a;
-    color:var(--text); font-family:'Space Mono',monospace; font-size:14px; outline:none; }
-  input[type=number]:focus { border-color:var(--cyan); }
-  .set-btn { padding:0 10px; border-radius:9px; border:1px solid var(--line); background:transparent; color:var(--muted);
-    font-size:11px; cursor:pointer; white-space:nowrap; }
-  .set-btn:hover { color:var(--cyan); border-color:var(--cyan); }
+  input[type=number] { width:100%; padding:9px 10px; border:1px solid var(--line-strong); border-radius:8px; background:#fff;
+    color:var(--text); font-family:inherit; font-size:14px; outline:none; }
+  input[type=number]:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  .set-btn { padding:0 12px; border-radius:8px; border:1px solid var(--line-strong); background:#fff; color:var(--text);
+    font-size:12px; cursor:pointer; white-space:nowrap; font-family:inherit; }
+  .set-btn:hover { color:var(--accent); border-color:var(--accent); }
 
-  .speed { margin:16px 0 4px; }
-  .speed-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
-  .speed-head .val { font-family:'Space Mono',monospace; font-size:15px; color:var(--cyan); font-weight:700; }
-  input[type=range] { -webkit-appearance:none; width:100%; height:4px; border-radius:2px; background:var(--line); outline:none; }
+  .speed { margin:18px 0 4px; }
+  .speed-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+  .speed-head .val { font-size:16px; color:var(--accent); font-weight:700; }
+  input[type=range] { -webkit-appearance:none; width:100%; height:4px; border-radius:2px; background:var(--line-strong); outline:none; }
   input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
-    background:var(--cyan); box-shadow:0 0 0 4px rgba(79,224,208,.15); cursor:pointer; }
-  input[type=range]::-moz-range-thumb { width:18px; height:18px; border:none; border-radius:50%; background:var(--cyan);
-    box-shadow:0 0 0 4px rgba(79,224,208,.15); cursor:pointer; }
-  .presets { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
-  .preset { flex:1; min-width:48px; padding:7px 0; text-align:center; font-family:'Space Mono',monospace; font-size:12px;
-    border:1px solid var(--line); border-radius:8px; color:var(--muted); background:transparent; cursor:pointer; }
-  .preset.active { border-color:var(--cyan); color:var(--cyan); }
+    background:var(--accent); border:2px solid #fff; box-shadow:0 1px 4px rgba(24,33,45,.35); cursor:pointer; }
+  input[type=range]::-moz-range-thumb { width:16px; height:16px; border:2px solid #fff; border-radius:50%; background:var(--accent);
+    box-shadow:0 1px 4px rgba(24,33,45,.35); cursor:pointer; }
+  .presets { display:flex; gap:6px; margin-top:12px; flex-wrap:wrap; }
+  .preset { flex:1; min-width:48px; padding:7px 0; text-align:center; font-size:13px; font-weight:500; font-family:inherit;
+    border:1px solid var(--line-strong); border-radius:8px; color:var(--text); background:#fff; cursor:pointer; }
+  .preset:hover { border-color:var(--accent); color:var(--accent); }
+  .preset.active { background:var(--accent); border-color:var(--accent); color:#fff; }
 
-  .toggle-row { display:flex; align-items:center; justify-content:space-between; margin:16px 0 18px; font-size:12px; color:var(--muted); }
-  .switch { position:relative; width:42px; height:22px; background:var(--line); border-radius:12px; cursor:pointer; transition:background .15s; }
-  .switch.on { background:var(--cyan); }
-  .switch .knob { position:absolute; top:2px; left:2px; width:18px; height:18px; background:#0b0f14; border-radius:50%; transition:left .15s; }
-  .switch.on .knob { left:22px; background:#04181a; }
+  .toggle-row { display:flex; align-items:center; justify-content:space-between; margin:18px 0 18px; font-size:14px; color:var(--text); }
+  .switch { position:relative; width:42px; height:24px; background:var(--line-strong); border-radius:12px; cursor:pointer; transition:background .15s; }
+  .switch.on { background:var(--accent); }
+  .switch .knob { position:absolute; top:2px; left:2px; width:20px; height:20px; background:#fff; border-radius:50%; transition:left .15s; box-shadow:0 1px 3px rgba(24,33,45,.3); }
+  .switch.on .knob { left:20px; }
 
   .buttons { display:flex; gap:10px; }
-  .main-btn { flex:1; padding:15px 0; border:none; border-radius:12px; font-size:14px; font-weight:600; letter-spacing:1px; cursor:pointer; font-family:inherit; }
-  .btn-play { background:var(--cyan); color:#04181a; box-shadow:0 8px 20px -6px rgba(79,224,208,.5); }
-  .btn-play:disabled { background:#26343b; color:var(--muted); box-shadow:none; cursor:not-allowed; }
-  .btn-reset { background:transparent; color:var(--text); border:1px solid var(--line); }
-  .status { margin-top:14px; text-align:center; font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1px; color:var(--muted); min-height:16px; }
+  .main-btn { flex:1; padding:13px 0; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
+  .btn-play { background:var(--accent); color:#fff; }
+  .btn-play:hover:not(:disabled) { background:var(--accent-dark); }
+  .btn-play:disabled { background:#c5cfe6; color:#fff; cursor:not-allowed; }
+  .btn-reset { background:#fff; color:var(--text); border:1px solid var(--line-strong); }
+  .btn-reset:hover { border-color:var(--accent); color:var(--accent); }
+  .status { margin-top:14px; text-align:center; font-size:12px; color:var(--muted); min-height:16px; }
+
+  .saved { margin-top:26px; padding-top:20px; border-top:1px solid var(--line); }
+  .saved-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+  .saved-head .count { font-size:12px; color:var(--muted); }
+  .save-row { display:flex; gap:6px; margin-bottom:12px; }
+  .save-row input[type=text] { flex:1; min-width:0; padding:9px 10px; border:1px solid var(--line-strong); border-radius:8px;
+    background:#fff; color:var(--text); font-size:14px; outline:none; font-family:inherit; }
+  .save-row input[type=text]:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  .small-btn { padding:0 14px; border-radius:8px; border:1px solid var(--line-strong); background:#fff; color:var(--text);
+    font-size:13px; cursor:pointer; white-space:nowrap; font-family:inherit; }
+  .small-btn:hover { border-color:var(--accent); color:var(--accent); }
+  .small-btn.primary { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600; }
+  .small-btn.primary:hover { background:var(--accent-dark); color:#fff; }
+  .small-btn:disabled { opacity:.45; cursor:not-allowed; }
+  .item { display:flex; align-items:stretch; gap:6px; margin-bottom:8px; }
+  .item-main { flex:1; min-width:0; text-align:left; padding:10px 12px; border:1px solid var(--line); border-radius:8px;
+    background:#fff; color:var(--text); cursor:pointer; font-family:inherit; }
+  .item-main:hover { border-color:var(--line-strong); background:var(--field); }
+  .item.active .item-main { border-color:var(--accent); background:var(--accent-soft); }
+  .item-name { font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .item-meta { margin-top:3px; font-size:12px; color:var(--muted); }
+  .item-btn { width:38px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--muted);
+    cursor:pointer; font-size:14px; padding:0; }
+  .item-btn:hover { color:var(--accent); border-color:var(--accent); }
+  .item-btn.del:hover { color:var(--danger); border-color:var(--danger); }
+  .empty { font-size:13px; color:var(--muted); padding:10px 2px; line-height:1.6; }
+  .io-row { display:flex; gap:6px; margin-top:12px; }
+  .io-row .small-btn { flex:1; padding:9px 0; text-align:center; }
 </style>
 </head>
 <body>
 <div class="device">
   <div class="brand">
-    <div class="name">◆ Loopcut</div>
-    <div class="tag">segment repeat player</div>
+    <div class="name">Loopcut</div>
+    <div class="tag">区間リピート・プレーヤー</div>
   </div>
 
   <div class="tabs">
@@ -192,6 +225,22 @@
     <button class="main-btn btn-reset" id="resetBtn">区間の先頭へ</button>
   </div>
   <div class="status" id="statusText">STANDBY</div>
+
+  <div class="saved">
+    <div class="saved-head"><span class="cap" style="margin:0">登録リスト</span><span class="count" id="savedCount"></span></div>
+    <div class="save-row">
+      <input type="text" id="saveName" placeholder="名前（空欄なら動画タイトル）">
+      <button class="small-btn primary" id="saveBtn" disabled>登録</button>
+      <button class="small-btn hidden" id="overwriteBtn">上書き</button>
+    </div>
+    <div id="savedList"></div>
+    <div class="io-row">
+      <button class="small-btn" id="exportBtn">書き出し</button>
+      <button class="small-btn" id="importBtn">読み込み</button>
+      <input type="file" id="importInput" accept=".json,application/json" class="hidden">
+    </div>
+    <div class="hint">YouTubeと動画URLを登録できます（ローカルファイルは登録不可）。リストはこの端末のブラウザに保存されます。PCとスマホで共有するときは「書き出し」→「読み込み」を使います。</div>
+  </div>
 </div>
 
 <script src="https://www.youtube.com/iframe_api"></script>
@@ -212,6 +261,10 @@
   let mode = null;            // 'yt' | 'video'
   let yt = null, ytReady = false, ytApiReady = false, pendingVideoId = null;
   let duration = 0, loopOn = true, rate = 1, dragging = null;
+  let currentSource = null;     // { type:'yt'|'url', ref }
+  let pendingSettings = null;   // applied once the video has loaded
+  let activeId = null, loadingFromList = false;
+  const STORE_KEY = 'loopcut.items.v1';
 
   // ---------- player adapter ----------
   const P = {
@@ -241,8 +294,17 @@
     playBtn.disabled = false;
     playBtn.textContent = '再生';
     placeholder.classList.add('hidden');
+    if (pendingSettings) {
+      const ps = pendingSettings; pendingSettings = null;
+      const s = clamp(ps.start, 0, duration);
+      const e = ps.end > s ? Math.min(ps.end, duration) : duration;
+      startInput.value = s.toFixed(1);
+      endInput.value = e.toFixed(1);
+      setRate(ps.rate);
+    }
     P.setRate(rate);
     renderRegion();
+    updateSaveButtons();
     setStatus('READY');
   }
 
@@ -266,6 +328,8 @@
   }
 
   function loadYouTube(id) {
+    currentSource = { type: 'yt', ref: id };
+    if (!loadingFromList) { activeId = null; renderList(); }
     if (!ytApiReady) {
       pendingVideoId = id;
       setStatus('YouTube APIを読み込み中… ネットワークをご確認ください');
@@ -318,7 +382,9 @@
   $('ytInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('ytLoadBtn').click(); });
 
   // ---------- local file / direct URL ----------
-  function loadVideoSrc(src) {
+  function loadVideoSrc(src, source) {
+    currentSource = source || null;
+    if (!loadingFromList) { activeId = null; renderList(); }
     if (yt && ytReady) yt.pauseVideo();
     ytHost.classList.add('hidden');
     video.classList.remove('hidden');
@@ -333,7 +399,7 @@
   dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
   dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
   dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag'); const f = e.dataTransfer.files[0]; if (f) loadVideoSrc(URL.createObjectURL(f)); });
-  $('urlLoadBtn').addEventListener('click', () => { const u = $('urlInput').value.trim(); if (u) loadVideoSrc(u); });
+  $('urlLoadBtn').addEventListener('click', () => { const u = $('urlInput').value.trim(); if (u) loadVideoSrc(u, { type: 'url', ref: u }); });
 
   video.addEventListener('loadedmetadata', () => onLoaded(video.duration));
   video.addEventListener('play', () => { playBtn.textContent = '一時停止'; setStatus('PLAYING'); });
@@ -413,6 +479,157 @@
     P.setRate(rate);
   });
   $('resetBtn').addEventListener('click', () => { if (mode) P.seek(getRange()[0]); });
+
+  // ---------- saved list ----------
+  const savedList = $('savedList'), saveBtn = $('saveBtn'), overwriteBtn = $('overwriteBtn'), saveName = $('saveName');
+  let items = [];
+
+  function loadItems() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      items = Array.isArray(arr) ? arr.filter(validItem) : [];
+    } catch (e) { items = []; }
+  }
+  function persist() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(items)); }
+    catch (e) { setStatus('WARN: この環境では保存できません（書き出しで控えを取ってください）'); }
+  }
+  function validItem(x) {
+    return x && (x.type === 'yt' || x.type === 'url') && typeof x.ref === 'string' && x.ref &&
+      isFinite(x.start) && isFinite(x.end) && isFinite(x.rate);
+  }
+  const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+  function defaultName() {
+    if (!currentSource) return '無題';
+    if (currentSource.type === 'yt') {
+      try { const t = yt.getVideoData().title; if (t) return t; } catch (e) {}
+      return 'YouTube ' + currentSource.ref;
+    }
+    try { return decodeURIComponent(new URL(currentSource.ref).pathname.split('/').pop()) || '動画URL'; }
+    catch (e) { return '動画URL'; }
+  }
+
+  function updateSaveButtons() {
+    const canSave = !!(currentSource && duration);
+    saveBtn.disabled = !canSave;
+    overwriteBtn.classList.toggle('hidden', !(canSave && activeId && items.some(i => i.id === activeId)));
+  }
+
+  function renderList() {
+    $('savedCount').textContent = items.length ? items.length + '件' : '';
+    savedList.innerHTML = '';
+    if (!items.length) {
+      const d = document.createElement('div');
+      d.className = 'empty';
+      d.textContent = 'まだ登録がありません。動画を読み込み、区間と速度を決めて「登録」を押してください。';
+      savedList.appendChild(d);
+    }
+    items.forEach(it => {
+      const row = document.createElement('div');
+      row.className = 'item' + (it.id === activeId ? ' active' : '');
+      const main = document.createElement('button');
+      main.className = 'item-main';
+      const nm = document.createElement('div'); nm.className = 'item-name'; nm.textContent = it.name;
+      const meta = document.createElement('div'); meta.className = 'item-meta';
+      meta.textContent = (it.type === 'yt' ? 'YT' : 'URL') + '  ' + fmt(it.start) + ' – ' + fmt(it.end) + '  ' + Number(it.rate).toFixed(2) + '×';
+      main.append(nm, meta);
+      main.addEventListener('click', () => loadItem(it.id));
+      const ren = document.createElement('button'); ren.className = 'item-btn'; ren.textContent = '✎'; ren.title = '名前を変更';
+      ren.addEventListener('click', () => {
+        const v = prompt('名前を入力してください', it.name);
+        if (v && v.trim()) { it.name = v.trim(); persist(); renderList(); }
+      });
+      const del = document.createElement('button'); del.className = 'item-btn del'; del.textContent = '✕'; del.title = '削除';
+      del.addEventListener('click', () => {
+        if (!confirm('「' + it.name + '」を削除しますか？')) return;
+        items = items.filter(x => x.id !== it.id);
+        if (activeId === it.id) activeId = null;
+        persist(); renderList(); updateSaveButtons();
+      });
+      row.append(main, ren, del);
+      savedList.appendChild(row);
+    });
+  }
+
+  function loadItem(id) {
+    const it = items.find(x => x.id === id);
+    if (!it) return;
+    pendingSettings = { start: it.start, end: it.end, rate: it.rate };
+    loadingFromList = true;
+    try {
+      if (it.type === 'yt') loadYouTube(it.ref);
+      else { $('urlInput').value = it.ref; loadVideoSrc(it.ref, { type: 'url', ref: it.ref }); }
+    } finally { loadingFromList = false; }
+    activeId = id;
+    renderList();
+    updateSaveButtons();
+  }
+
+  function currentSettings() {
+    const [s, e] = getRange();
+    return { start: +s.toFixed(1), end: +e.toFixed(1), rate };
+  }
+
+  saveBtn.addEventListener('click', () => {
+    if (!currentSource || !duration) return;
+    const it = Object.assign({
+      id: newId(),
+      name: saveName.value.trim() || defaultName(),
+      type: currentSource.type,
+      ref: currentSource.ref
+    }, currentSettings());
+    items.unshift(it);
+    activeId = it.id;
+    saveName.value = '';
+    persist(); renderList(); updateSaveButtons();
+    setStatus('SAVED: 登録しました');
+  });
+
+  overwriteBtn.addEventListener('click', () => {
+    const it = items.find(x => x.id === activeId);
+    if (!it || !duration) return;
+    Object.assign(it, currentSettings());
+    if (saveName.value.trim()) { it.name = saveName.value.trim(); saveName.value = ''; }
+    persist(); renderList();
+    setStatus('SAVED: 上書きしました');
+  });
+
+  $('exportBtn').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify({ app: 'loopcut', version: 1, items }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'loopcut_list.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+
+  $('importBtn').addEventListener('click', () => $('importInput').click());
+  $('importInput').addEventListener('change', e => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const data = JSON.parse(r.result);
+        const arr = Array.isArray(data) ? data : data.items;
+        const incoming = (arr || []).filter(validItem);
+        let added = 0;
+        incoming.forEach(x => {
+          const dup = items.some(y => y.type === x.type && y.ref === x.ref && y.start === x.start && y.end === x.end && y.rate === x.rate);
+          if (!dup) { items.push(Object.assign({}, x, { id: newId() })); added++; }
+        });
+        persist(); renderList(); updateSaveButtons();
+        setStatus('IMPORT: ' + added + '件を追加しました');
+      } catch (err) { setStatus('ERROR: ファイルを読み込めませんでした'); }
+    };
+    r.readAsText(f);
+  });
+
+  loadItems();
+  renderList();
 
   // ---------- loop watcher (also drives the playhead) ----------
   setInterval(() => {

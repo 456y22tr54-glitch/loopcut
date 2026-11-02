@@ -95,13 +95,16 @@
   .switch .knob { position:absolute; top:2px; left:2px; width:20px; height:20px; background:#fff; border-radius:50%; transition:left .15s; box-shadow:0 1px 3px rgba(24,33,45,.3); }
   .switch.on .knob { left:20px; }
 
-  .buttons { display:flex; gap:10px; }
+  .buttons { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:18px; }
   .main-btn { flex:1; padding:13px 0; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
   .btn-play { background:var(--accent); color:#fff; }
   .btn-play:hover:not(:disabled) { background:var(--accent-dark); }
   .btn-play:disabled { background:#c5cfe6; color:#fff; cursor:not-allowed; }
   .btn-reset { background:#fff; color:var(--text); border:1px solid var(--line-strong); }
   .btn-reset:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-loop { background:#fff; color:var(--muted); border:1px solid var(--line-strong); }
+  .btn-loop:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-loop.on { background:var(--accent-soft); color:var(--accent); border-color:var(--accent); }
   .btn-save { background:#fff; color:var(--accent); border:1px solid var(--accent); }
   .btn-save:hover:not(:disabled) { background:var(--accent-soft); }
   .btn-save:disabled { color:#a9b4c8; border-color:var(--line-strong); cursor:not-allowed; }
@@ -219,13 +222,9 @@
     </div>
   </div>
 
-  <div class="toggle-row">
-    <span>区間をリピート再生</span>
-    <div class="switch on" id="loopSwitch"><div class="knob"></div></div>
-  </div>
-
   <div class="buttons">
     <button class="main-btn btn-play" id="playBtn" disabled>再生</button>
+    <button class="main-btn btn-loop on" id="loopBtn" aria-pressed="true">リピート ON</button>
     <button class="main-btn btn-reset" id="resetBtn">区間の先頭へ</button>
     <button class="main-btn btn-save" id="quickSaveBtn" disabled>登録</button>
   </div>
@@ -479,7 +478,12 @@
   document.querySelectorAll('.preset').forEach(b => b.addEventListener('click', () => setRate(parseFloat(b.dataset.r))));
 
   // ---------- controls ----------
-  $('loopSwitch').addEventListener('click', function () { loopOn = !loopOn; this.classList.toggle('on', loopOn); });
+  $('loopBtn').addEventListener('click', function () {
+    loopOn = !loopOn;
+    this.classList.toggle('on', loopOn);
+    this.setAttribute('aria-pressed', String(loopOn));
+    this.textContent = loopOn ? 'リピート ON' : 'リピート OFF';
+  });
 
   playBtn.addEventListener('click', () => {
     if (!mode) return;

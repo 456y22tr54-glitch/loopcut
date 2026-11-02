@@ -83,8 +83,8 @@
     background:var(--accent); border:2px solid #fff; box-shadow:0 1px 4px rgba(24,33,45,.35); cursor:pointer; }
   input[type=range]::-moz-range-thumb { width:16px; height:16px; border:2px solid #fff; border-radius:50%; background:var(--accent);
     box-shadow:0 1px 4px rgba(24,33,45,.35); cursor:pointer; }
-  .presets { display:flex; gap:6px; margin-top:12px; flex-wrap:wrap; }
-  .preset { flex:1; min-width:48px; padding:7px 0; text-align:center; font-size:13px; font-weight:500; font-family:inherit;
+  .presets { display:grid; grid-template-columns:repeat(6,1fr); gap:6px; margin-top:12px; }
+  .preset { min-width:0; padding:7px 0; text-align:center; font-size:13px; font-weight:500; font-family:inherit;
     border:1px solid var(--line-strong); border-radius:8px; color:var(--text); background:#fff; cursor:pointer; }
   .preset:hover { border-color:var(--accent); color:var(--accent); }
   .preset.active { background:var(--accent); border-color:var(--accent); color:#fff; }
@@ -95,22 +95,33 @@
   .switch .knob { position:absolute; top:2px; left:2px; width:20px; height:20px; background:#fff; border-radius:50%; transition:left .15s; box-shadow:0 1px 3px rgba(24,33,45,.3); }
   .switch.on .knob { left:20px; }
 
-  .buttons { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:18px; }
+  .buttons { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
   .main-btn { flex:1; padding:13px 0; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
   .btn-play { background:var(--accent); color:#fff; }
   .btn-play:hover:not(:disabled) { background:var(--accent-dark); }
   .btn-play:disabled { background:#c5cfe6; color:#fff; cursor:not-allowed; }
   .btn-reset { background:#fff; color:var(--text); border:1px solid var(--line-strong); }
   .btn-reset:hover { border-color:var(--accent); color:var(--accent); }
-  .btn-loop { background:#fff; color:var(--muted); border:1px solid var(--line-strong); }
-  .btn-loop:hover { border-color:var(--accent); color:var(--accent); }
-  .btn-loop.on { background:var(--accent-soft); color:var(--accent); border-color:var(--accent); }
+  .loop-row { display:flex; align-items:center; justify-content:space-between; margin-top:20px; padding:12px 14px;
+    background:var(--field); border:1px solid var(--line); border-radius:12px; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent; }
+  .loop-row:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .loop-label { font-size:15px; font-weight:600; }
+  .loop-right { display:flex; align-items:center; gap:10px; }
+  .loop-state { font-size:13px; font-weight:700; color:var(--muted); min-width:26px; text-align:right; }
+  .loop-state.on { color:#1f9d45; }
+  .ios-switch { position:relative; width:51px; height:31px; border-radius:16px; background:#d5d9e0; transition:background .2s; flex:none; }
+  .ios-switch .knob { position:absolute; top:2px; left:2px; width:27px; height:27px; border-radius:50%; background:#fff;
+    box-shadow:0 2px 4px rgba(0,0,0,.3); transition:transform .2s; }
+  .ios-switch.on { background:#34c759; }
+  .ios-switch.on .knob { transform:translateX(20px); }
+  .btn-play { grid-column:1 / -1; }
   .btn-save { background:#fff; color:var(--accent); border:1px solid var(--accent); }
   .btn-save:hover:not(:disabled) { background:var(--accent-soft); }
   .btn-save:disabled { color:#a9b4c8; border-color:var(--line-strong); cursor:not-allowed; }
   .main-btn { padding-left:4px; padding-right:4px; }
   .status { margin-top:14px; text-align:center; font-size:12px; color:var(--muted); min-height:16px; }
 
+  .loader { margin-top:26px; padding-top:20px; border-top:1px solid var(--line); }
   .saved { margin-top:26px; padding-top:20px; border-top:1px solid var(--line); }
   .saved-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
   .saved-head .count { font-size:12px; color:var(--muted); }
@@ -147,39 +158,10 @@
     <div class="tag">区間リピート・プレーヤー</div>
   </div>
 
-  <div class="tabs">
-    <div class="tab-btn active" data-tab="yt">YouTube</div>
-    <div class="tab-btn" data-tab="file">ファイル</div>
-    <div class="tab-btn" data-tab="url">動画URL</div>
-  </div>
-
-  <div class="source-panel" id="panel-yt">
-    <div class="url-row">
-      <input type="text" id="ytInput" placeholder="YouTubeのURLまたは動画IDを貼り付け">
-      <button id="ytLoadBtn">読込</button>
-    </div>
-    <div class="hint">youtube.com / youtu.be / shorts のURLに対応。埋め込みが禁止されている動画は再生できません。</div>
-  </div>
-
-  <div class="source-panel hidden" id="panel-file">
-    <label class="file-drop" id="dropZone">
-      動画ファイルをドラッグ＆ドロップ、またはタップして選択
-      <input type="file" id="fileInput" accept="video/*">
-    </label>
-  </div>
-
-  <div class="source-panel hidden" id="panel-url">
-    <div class="url-row">
-      <input type="text" id="urlInput" placeholder="動画ファイルの直接URL（OneDrive等）">
-      <button id="urlLoadBtn">読込</button>
-    </div>
-    <div class="hint">OneDriveの共有リンクは、末尾を ?download=1 にすると直リンクになることがあります。</div>
-  </div>
-
   <div class="stage">
     <div id="ytHost" class="hidden"></div>
     <video id="video" class="hidden" playsinline controls></video>
-    <div class="placeholder" id="placeholder">動画を読み込んでください</div>
+    <div class="placeholder" id="placeholder">下の欄にURLを入れるか、登録リストから選んでください</div>
   </div>
 
   <div class="timeline-wrap">
@@ -222,13 +204,49 @@
     </div>
   </div>
 
+  <div class="loop-row" id="loopRow" role="switch" aria-checked="true" tabindex="0">
+    <span class="loop-label">区間をリピート</span>
+    <span class="loop-right"><span class="loop-state on" id="loopState">ON</span><span class="ios-switch on" id="loopSwitch"><span class="knob"></span></span></span>
+  </div>
+
   <div class="buttons">
     <button class="main-btn btn-play" id="playBtn" disabled>再生</button>
-    <button class="main-btn btn-loop on" id="loopBtn" aria-pressed="true">リピート ON</button>
     <button class="main-btn btn-reset" id="resetBtn">区間の先頭へ</button>
     <button class="main-btn btn-save" id="quickSaveBtn" disabled>登録</button>
   </div>
   <div class="status" id="statusText">STANDBY</div>
+
+  <div class="loader">
+    <div class="saved-head"><span class="cap" style="margin:0">新しい動画を読み込む</span></div>
+  <div class="tabs">
+    <div class="tab-btn active" data-tab="yt">YouTube</div>
+    <div class="tab-btn" data-tab="file">ファイル</div>
+    <div class="tab-btn" data-tab="url">動画URL</div>
+  </div>
+
+  <div class="source-panel" id="panel-yt">
+    <div class="url-row">
+      <input type="text" id="ytInput" placeholder="YouTubeのURLまたは動画IDを貼り付け">
+      <button id="ytLoadBtn">読込</button>
+    </div>
+    <div class="hint">youtube.com / youtu.be / shorts のURLに対応。埋め込みが禁止されている動画は再生できません。</div>
+  </div>
+
+  <div class="source-panel hidden" id="panel-file">
+    <label class="file-drop" id="dropZone">
+      動画ファイルをドラッグ＆ドロップ、またはタップして選択
+      <input type="file" id="fileInput" accept="video/*">
+    </label>
+  </div>
+
+  <div class="source-panel hidden" id="panel-url">
+    <div class="url-row">
+      <input type="text" id="urlInput" placeholder="動画ファイルの直接URL（OneDrive等）">
+      <button id="urlLoadBtn">読込</button>
+    </div>
+    <div class="hint">OneDriveの共有リンクは、末尾を ?download=1 にすると直リンクになることがあります。</div>
+  </div>
+  </div>
 
   <div class="saved">
     <div class="saved-head"><span class="cap" style="margin:0">登録リスト</span><span class="count" id="savedCount"></span></div>
@@ -353,9 +371,12 @@
     if (yt && ytReady) { yt.cueVideoById(id); return; }
     // The host div is replaced by the iframe once; keep a fresh child container
     ytHost.innerHTML = '<div id="ytInner"></div>';
+    const pv = { playsinline: 1, rel: 0, modestbranding: 1 };
+    if (/^https?:$/.test(location.protocol)) pv.origin = location.origin;
     yt = new YT.Player('ytInner', {
       videoId: id,
-      playerVars: { playsinline: 1, rel: 0, modestbranding: 1 },
+      host: 'https://www.youtube-nocookie.com',
+      playerVars: pv,
       events: {
         onReady: () => { ytReady = true; ytReadyCheck(); },
         onStateChange: onYtState,
@@ -478,12 +499,16 @@
   document.querySelectorAll('.preset').forEach(b => b.addEventListener('click', () => setRate(parseFloat(b.dataset.r))));
 
   // ---------- controls ----------
-  $('loopBtn').addEventListener('click', function () {
-    loopOn = !loopOn;
-    this.classList.toggle('on', loopOn);
-    this.setAttribute('aria-pressed', String(loopOn));
-    this.textContent = loopOn ? 'リピート ON' : 'リピート OFF';
-  });
+  const loopRow = $('loopRow'), loopSwitch = $('loopSwitch'), loopState = $('loopState');
+  function setLoop(on) {
+    loopOn = on;
+    loopSwitch.classList.toggle('on', on);
+    loopState.classList.toggle('on', on);
+    loopState.textContent = on ? 'ON' : 'OFF';
+    loopRow.setAttribute('aria-checked', String(on));
+  }
+  loopRow.addEventListener('click', () => setLoop(!loopOn));
+  loopRow.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setLoop(!loopOn); } });
 
   playBtn.addEventListener('click', () => {
     if (!mode) return;

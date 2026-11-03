@@ -58,6 +58,21 @@
     background:rgba(255,255,255,.94); box-shadow:0 4px 16px rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; pointer-events:none; }
   .shield-play::before { content:""; border-style:solid; border-width:12px 0 12px 20px; border-color:transparent transparent transparent var(--accent); margin-left:5px; }
   .shield.playing .shield-play { display:none; }
+  .fs-open { position:absolute; right:8px; top:8px; z-index:20; padding:7px 11px; border:none; border-radius:8px;
+    background:rgba(13,17,23,.68); color:#fff; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; }
+  .fs-bar { display:none; position:absolute; left:0; right:0; bottom:0; z-index:20; gap:10px; align-items:center;
+    padding:28px 14px calc(12px + env(safe-area-inset-bottom)); background:linear-gradient(to top, rgba(0,0,0,.72), rgba(0,0,0,0)); }
+  .fs-bar button { flex:1; padding:12px 0; border:none; border-radius:10px; font-size:15px; font-weight:600; font-family:inherit;
+    background:rgba(255,255,255,.92); color:#18212d; cursor:pointer; }
+  .fs-bar button.fs-primary { background:var(--accent); color:#fff; }
+  .stage.full { position:fixed; inset:0; z-index:1000; width:100%; height:100vh; height:100dvh; aspect-ratio:auto; margin:0; border:0; border-radius:0; }
+  .stage:fullscreen { width:100%; height:100%; aspect-ratio:auto; margin:0; border:0; border-radius:0; }
+  .stage:-webkit-full-screen { width:100%; height:100%; aspect-ratio:auto; margin:0; border:0; border-radius:0; }
+  .stage.full .fs-bar, .stage:fullscreen .fs-bar, .stage:-webkit-full-screen .fs-bar { display:flex; }
+  .stage.full .fs-open, .stage:fullscreen .fs-open, .stage:-webkit-full-screen .fs-open { display:none; }
+  .ver { margin-top:18px; text-align:center; font-size:11px; color:#9aa5b5; }
+  #dbg { position:fixed; left:0; right:0; bottom:0; max-height:36vh; overflow:auto; margin:0; padding:8px 10px; z-index:3000;
+    background:rgba(13,17,23,.93); color:#9fe7ff; font:11px/1.5 ui-monospace,Menlo,Consolas,monospace; white-space:pre-wrap; }
   .placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     color:#8b97a8; font-size:13px; text-align:center; padding:12px; pointer-events:none; }
 
@@ -120,6 +135,10 @@
   .ios-switch .knob { position:absolute; top:2px; left:2px; width:27px; height:27px; border-radius:50%; background:#fff;
     box-shadow:0 2px 4px rgba(0,0,0,.3); transition:transform .2s; }
   .ios-switch.on { background:#34c759; }
+  .fs-bar #fsLoop { display:flex; align-items:center; justify-content:center; gap:10px; }
+  .ios-switch.mini { width:44px; height:26px; border-radius:13px; }
+  .ios-switch.mini .knob { width:22px; height:22px; }
+  .ios-switch.mini.on .knob { transform:translateX(18px); }
   .ios-switch.on .knob { transform:translateX(20px); }
   .btn-play { grid-column:1 / -1; }
   .btn-save { background:#fff; color:var(--accent); border:1px solid var(--accent); }
@@ -170,6 +189,12 @@
     <div id="ytShield" class="shield hidden"><div class="shield-play"></div></div>
     <video id="video" class="hidden" playsinline controls></video>
     <div class="placeholder" id="placeholder">下の欄にURLを入れるか、登録リストから選んでください</div>
+    <button class="fs-open" id="fsBtn" type="button" aria-label="全画面表示">⤢ 全画面（F）</button>
+    <div class="fs-bar">
+      <button type="button" class="fs-primary" id="fsPlay">再生</button>
+      <button type="button" id="fsLoop" role="switch" aria-checked="true"><span>リピート</span><span class="ios-switch on mini"><span class="knob"></span></span></button>
+      <button type="button" id="fsClose">閉じる ✕</button>
+    </div>
   </div>
   <div class="hint hidden" id="ytHint" style="margin:-6px 0 14px">このiPhoneでは、最初の1回だけ、動画の中央の▶を直接タップして再生を始めてください。始まると自動で保護がかかり、以降は下の「再生」ボタン（または動画のタップ）で操作できます。</div>
 
@@ -272,11 +297,26 @@
     </div>
     <div class="hint">YouTubeと動画URLを登録できます（ローカルファイルは登録不可）。リストはこの端末のブラウザに保存されます。PCとスマホで共有するときは「書き出し」→「読み込み」を使います。</div>
   </div>
+  <div class="ver">ver 20261103-e</div>
 </div>
+<pre id="dbg" class="hidden"></pre>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
+  const BUILD = '20261103-e';
+  // diagnostics: open the page with ?debug=1 to see a live event log at the bottom
+  const DEBUG = /[?&]debug=1/.test(location.search);
+  const dbgEl = $('dbg'), dbgLines = [], t00 = Date.now();
+  function dlog(msg) {
+    if (!DEBUG) return;
+    dbgLines.push(((Date.now() - t00) / 1000).toFixed(2) + 's ' + msg);
+    if (dbgLines.length > 60) dbgLines.shift();
+    dbgEl.classList.remove('hidden');
+    dbgEl.textContent = dbgLines.join('\n');
+    dbgEl.scrollTop = dbgEl.scrollHeight;
+  }
+  const ys = () => { try { return yt.getPlayerState(); } catch (e) { return 'n/a'; } };
   const video = $('video'), ytHost = $('ytHost'), placeholder = $('placeholder');
   const startInput = $('startInput'), endInput = $('endInput');
   const timeline = $('timeline'), loopRegion = $('loopRegion');
@@ -388,7 +428,9 @@
     if (yt && ytReady) { yt.cueVideoById(id); return; }
     // The host div is replaced by the iframe once; keep a fresh child container
     ytHost.innerHTML = '<div id="ytInner"></div>';
-    const pv = { playsinline: 1, rel: 0, modestbranding: 1 };
+    const pv = { playsinline: 1, rel: 0, modestbranding: 1, fs: 0, disablekb: 1, iv_load_policy: 3 };
+    // PC/Android: our own controls replace YouTube's. iPhone keeps YouTube's big first-play button.
+    if (!isIOS) pv.controls = 0;
     if (/^https?:$/.test(location.protocol)) pv.origin = location.origin;
     yt = new YT.Player('ytInner', {
       videoId: id,
@@ -397,7 +439,7 @@
       events: {
         onReady: () => { ytReady = true; ytReadyCheck(); },
         onStateChange: onYtState,
-        onError: e => {
+        onError: e => { dlog('YT error ' + e.data);
           const msg = {2:'URLが不正です',5:'再生できない動画です',100:'動画が見つかりません',101:'埋め込みが許可されていません',150:'埋め込みが許可されていません',153:'実行環境のオリジンが不正です（ファイル直開きでは動かない場合があります）'};
           setStatus('ERROR: ' + (msg[e.data] || ('コード ' + e.data)));
           placeholder.classList.remove('hidden'); placeholder.textContent = '読み込みエラー';
@@ -412,6 +454,7 @@
   }
 
   function onYtState(e) {
+    dlog('YT state -> ' + e.data);
     // 5 = cued, 1 = playing, 2 = paused, 0 = ended
     if (e.data === 5) ytReadyCheck();
     ytShield.classList.toggle('playing', e.data === 1 || e.data === 3);
@@ -533,9 +576,73 @@
   loopRow.addEventListener('click', () => setLoop(!loopOn));
   loopRow.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setLoop(!loopOn); } });
 
+  // ---------- full screen ----------
+  const stageEl = document.querySelector('.stage'), fsBtn = $('fsBtn'), fsPlay = $('fsPlay'), fsLoop = $('fsLoop'), fsClose = $('fsClose');
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  // real element fullscreen only where it is dependable; iPhone/iPad use the page-filling mode
+  const nativeFs = !isIOS && !!(stageEl.requestFullscreen || stageEl.webkitRequestFullscreen);
+  let pseudoFull = false, lastUserPause = 0;
+  const nativeFsOn = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  // some players pause while the layout changes; resume if it was playing and the user did not pause on purpose
+  function resumeIfNeeded(was) {
+    if (!was) return;
+    const t0 = Date.now();
+    [250, 800, 1600].forEach(ms => setTimeout(() => {
+      const need = mode && lastUserPause < t0 && !P.playing();
+      dlog('resume check +' + ms + 'ms: playing=' + P.playing() + ' ytState=' + ys() + ' -> ' + (need ? 'play()' : 'no action'));
+      if (need) { P.play(); P.setRate(rate); }
+    }, ms));
+  }
+  async function enterFull() {
+    if (!duration) { setStatus('先に動画を読み込んでください'); return; }
+    const was = P.playing();
+    dlog('enterFull: nativeFs=' + nativeFs + ' ios=' + isIOS + ' wasPlaying=' + was + ' ytState=' + ys());
+    video.controls = false;
+    if (nativeFs) {
+      try { await (stageEl.requestFullscreen ? stageEl.requestFullscreen() : stageEl.webkitRequestFullscreen()); resumeIfNeeded(was); return; }
+      catch (e) { /* fall through to page-filling mode */ }
+    }
+    pseudoFull = true;
+    stageEl.classList.add('full');
+    document.body.style.overflow = 'hidden';
+    window.scrollTo(0, 0);
+    resumeIfNeeded(was);
+  }
+  function exitFull() {
+    const was = P.playing();
+    dlog('exitFull: wasPlaying=' + was);
+    video.controls = true;
+    if (pseudoFull) { pseudoFull = false; stageEl.classList.remove('full'); document.body.style.overflow = ''; }
+    if (nativeFsOn()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); }
+    resumeIfNeeded(was);
+  }
+  ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => { if (!nativeFsOn() && !pseudoFull) video.controls = true; }));
+  const swallow = fn => e => { e.stopPropagation(); e.preventDefault(); fn(); };
+  fsBtn.addEventListener('click', swallow(enterFull));
+  fsClose.addEventListener('click', swallow(exitFull));
+  fsPlay.addEventListener('click', () => playBtn.click());
+  fsLoop.addEventListener('click', () => loopRow.click());
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && pseudoFull) exitFull(); });
+  ['resize', 'blur', 'focus', 'pagehide', 'orientationchange'].forEach(ev => window.addEventListener(ev, () => dlog('window ' + ev + ' (' + innerWidth + 'x' + innerHeight + ')')));
+  ['visibilitychange', 'fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => dlog('document ' + ev + ' hidden=' + document.hidden + ' fsEl=' + nativeFsOn())));
+  const inFull = () => pseudoFull || nativeFsOn();
+  ytShield.addEventListener('dblclick', () => (inFull() ? exitFull() : enterFull()));
+  document.addEventListener('keydown', e => {
+    if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '')) {
+      e.preventDefault(); inFull() ? exitFull() : enterFull();
+    }
+  });
+  dlog('build ' + BUILD + ' | ' + navigator.userAgent.slice(0, 100));
+  new MutationObserver(() => { fsPlay.textContent = playBtn.textContent; }).observe(playBtn, { childList: true, characterData: true, subtree: true });
+  new MutationObserver(() => {
+    const on = loopState.textContent === 'ON';
+    fsLoop.querySelector('.ios-switch').classList.toggle('on', on);
+    fsLoop.setAttribute('aria-checked', String(on));
+  }).observe(loopState, { childList: true, characterData: true, subtree: true });
+
   playBtn.addEventListener('click', () => {
     if (!mode) return;
-    if (P.playing()) { P.pause(); return; }
+    if (P.playing()) { lastUserPause = Date.now(); dlog('user pause'); P.pause(); return; }
     if (loopOn) {
       const [s, e] = getRange(), t = P.time();
       if (t < s || t >= e - 0.05) P.seek(s);

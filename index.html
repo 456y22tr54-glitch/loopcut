@@ -553,29 +553,44 @@
 
   // ---------- full screen ----------
   const stageEl = document.querySelector('.stage'), fsBtn = $('fsBtn'), fsPlay = $('fsPlay'), fsLoop = $('fsLoop'), fsClose = $('fsClose');
-  const nativeFs = !!(stageEl.requestFullscreen || stageEl.webkitRequestFullscreen);
-  let pseudoFull = false;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  // real element fullscreen only where it is dependable; iPhone/iPad use the page-filling mode
+  const nativeFs = !isIOS && !!(stageEl.requestFullscreen || stageEl.webkitRequestFullscreen);
+  let pseudoFull = false, lastUserPause = 0;
   const nativeFsOn = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  // some players pause while the layout changes; resume if it was playing and the user did not pause on purpose
+  function resumeIfNeeded(was) {
+    if (!was) return;
+    const t0 = Date.now();
+    [250, 800, 1600].forEach(ms => setTimeout(() => {
+      if (mode && lastUserPause < t0 && !P.playing()) { P.play(); P.setRate(rate); }
+    }, ms));
+  }
   async function enterFull() {
     if (!duration) { setStatus('先に動画を読み込んでください'); return; }
+    const was = P.playing();
     video.controls = false;
     if (nativeFs) {
-      try { await (stageEl.requestFullscreen ? stageEl.requestFullscreen() : stageEl.webkitRequestFullscreen()); return; }
+      try { await (stageEl.requestFullscreen ? stageEl.requestFullscreen() : stageEl.webkitRequestFullscreen()); resumeIfNeeded(was); return; }
       catch (e) { /* fall through to page-filling mode */ }
     }
     pseudoFull = true;
     stageEl.classList.add('full');
     document.body.style.overflow = 'hidden';
     window.scrollTo(0, 0);
+    resumeIfNeeded(was);
   }
   function exitFull() {
+    const was = P.playing();
     video.controls = true;
     if (pseudoFull) { pseudoFull = false; stageEl.classList.remove('full'); document.body.style.overflow = ''; }
     if (nativeFsOn()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); }
+    resumeIfNeeded(was);
   }
   ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => { if (!nativeFsOn() && !pseudoFull) video.controls = true; }));
-  fsBtn.addEventListener('click', enterFull);
-  fsClose.addEventListener('click', exitFull);
+  const swallow = fn => e => { e.stopPropagation(); e.preventDefault(); fn(); };
+  fsBtn.addEventListener('click', swallow(enterFull));
+  fsClose.addEventListener('click', swallow(exitFull));
   fsPlay.addEventListener('click', () => playBtn.click());
   fsLoop.addEventListener('click', () => loopRow.click());
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && pseudoFull) exitFull(); });
@@ -584,7 +599,7 @@
 
   playBtn.addEventListener('click', () => {
     if (!mode) return;
-    if (P.playing()) { P.pause(); return; }
+    if (P.playing()) { lastUserPause = Date.now(); P.pause(); return; }
     if (loopOn) {
       const [s, e] = getRange(), t = P.time();
       if (t < s || t >= e - 0.05) P.seek(s);

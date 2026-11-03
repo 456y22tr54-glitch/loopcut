@@ -58,6 +58,18 @@
     background:rgba(255,255,255,.94); box-shadow:0 4px 16px rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; pointer-events:none; }
   .shield-play::before { content:""; border-style:solid; border-width:12px 0 12px 20px; border-color:transparent transparent transparent var(--accent); margin-left:5px; }
   .shield.playing .shield-play { display:none; }
+  .fs-open { position:absolute; right:8px; top:8px; z-index:20; padding:7px 11px; border:none; border-radius:8px;
+    background:rgba(13,17,23,.68); color:#fff; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; }
+  .fs-bar { display:none; position:absolute; left:0; right:0; bottom:0; z-index:20; gap:10px; align-items:center;
+    padding:28px 14px calc(12px + env(safe-area-inset-bottom)); background:linear-gradient(to top, rgba(0,0,0,.72), rgba(0,0,0,0)); }
+  .fs-bar button { flex:1; padding:12px 0; border:none; border-radius:10px; font-size:15px; font-weight:600; font-family:inherit;
+    background:rgba(255,255,255,.92); color:#18212d; cursor:pointer; }
+  .fs-bar button.fs-primary { background:var(--accent); color:#fff; }
+  .stage.full { position:fixed; inset:0; z-index:1000; width:100%; height:100vh; height:100dvh; aspect-ratio:auto; margin:0; border:0; border-radius:0; }
+  .stage:fullscreen { width:100%; height:100%; aspect-ratio:auto; margin:0; border:0; border-radius:0; }
+  .stage:-webkit-full-screen { width:100%; height:100%; aspect-ratio:auto; margin:0; border:0; border-radius:0; }
+  .stage.full .fs-bar, .stage:fullscreen .fs-bar, .stage:-webkit-full-screen .fs-bar { display:flex; }
+  .stage.full .fs-open, .stage:fullscreen .fs-open, .stage:-webkit-full-screen .fs-open { display:none; }
   .placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     color:#8b97a8; font-size:13px; text-align:center; padding:12px; pointer-events:none; }
 
@@ -170,6 +182,12 @@
     <div id="ytShield" class="shield hidden"><div class="shield-play"></div></div>
     <video id="video" class="hidden" playsinline controls></video>
     <div class="placeholder" id="placeholder">下の欄にURLを入れるか、登録リストから選んでください</div>
+    <button class="fs-open" id="fsBtn" type="button" aria-label="全画面表示">⤢ 全画面</button>
+    <div class="fs-bar">
+      <button type="button" class="fs-primary" id="fsPlay">再生</button>
+      <button type="button" id="fsLoop">リピート ON</button>
+      <button type="button" id="fsClose">閉じる ✕</button>
+    </div>
   </div>
   <div class="hint hidden" id="ytHint" style="margin:-6px 0 14px">このiPhoneでは、最初の1回だけ、動画の中央の▶を直接タップして再生を始めてください。始まると自動で保護がかかり、以降は下の「再生」ボタン（または動画のタップ）で操作できます。</div>
 
@@ -532,6 +550,37 @@
   }
   loopRow.addEventListener('click', () => setLoop(!loopOn));
   loopRow.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setLoop(!loopOn); } });
+
+  // ---------- full screen ----------
+  const stageEl = document.querySelector('.stage'), fsBtn = $('fsBtn'), fsPlay = $('fsPlay'), fsLoop = $('fsLoop'), fsClose = $('fsClose');
+  const nativeFs = !!(stageEl.requestFullscreen || stageEl.webkitRequestFullscreen);
+  let pseudoFull = false;
+  const nativeFsOn = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  async function enterFull() {
+    if (!duration) { setStatus('先に動画を読み込んでください'); return; }
+    video.controls = false;
+    if (nativeFs) {
+      try { await (stageEl.requestFullscreen ? stageEl.requestFullscreen() : stageEl.webkitRequestFullscreen()); return; }
+      catch (e) { /* fall through to page-filling mode */ }
+    }
+    pseudoFull = true;
+    stageEl.classList.add('full');
+    document.body.style.overflow = 'hidden';
+    window.scrollTo(0, 0);
+  }
+  function exitFull() {
+    video.controls = true;
+    if (pseudoFull) { pseudoFull = false; stageEl.classList.remove('full'); document.body.style.overflow = ''; }
+    if (nativeFsOn()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); }
+  }
+  ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => { if (!nativeFsOn() && !pseudoFull) video.controls = true; }));
+  fsBtn.addEventListener('click', enterFull);
+  fsClose.addEventListener('click', exitFull);
+  fsPlay.addEventListener('click', () => playBtn.click());
+  fsLoop.addEventListener('click', () => loopRow.click());
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && pseudoFull) exitFull(); });
+  new MutationObserver(() => { fsPlay.textContent = playBtn.textContent; }).observe(playBtn, { childList: true, characterData: true, subtree: true });
+  new MutationObserver(() => { fsLoop.textContent = 'リピート ' + loopState.textContent; }).observe(loopState, { childList: true, characterData: true, subtree: true });
 
   playBtn.addEventListener('click', () => {
     if (!mode) return;

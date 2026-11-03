@@ -26,6 +26,7 @@
   .brand { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--line); }
   .brand .name { font-size:16px; font-weight:700; letter-spacing:.2px; color:var(--text); display:flex; align-items:center; gap:10px; }
   .brand .name::before { content:""; width:10px; height:10px; border-radius:3px; background:var(--accent); display:inline-block; }
+  .vbadge { font-size:12px; font-weight:700; color:#fff; background:var(--accent); border-radius:999px; padding:2px 9px; letter-spacing:0; }
   .brand .tag { font-size:12px; color:var(--muted); }
 
   .tabs { display:flex; gap:4px; margin-bottom:14px; padding:4px; background:var(--field); border:1px solid var(--line); border-radius:10px; }
@@ -180,7 +181,7 @@
 <body>
 <div class="device">
   <div class="brand">
-    <div class="name">Loopcut</div>
+    <div class="name">Loopcut <span class="vbadge">ver 20261103-f</span></div>
     <div class="tag">区間リピート・プレーヤー</div>
   </div>
 
@@ -297,14 +298,14 @@
     </div>
     <div class="hint">YouTubeと動画URLを登録できます（ローカルファイルは登録不可）。リストはこの端末のブラウザに保存されます。PCとスマホで共有するときは「書き出し」→「読み込み」を使います。</div>
   </div>
-  <div class="ver">ver 20261103-e</div>
+  <div class="ver">ver 20261103-f</div>
 </div>
 <pre id="dbg" class="hidden"></pre>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const BUILD = '20261103-e';
+  const BUILD = '20261103-f';
   // diagnostics: open the page with ?debug=1 to see a live event log at the bottom
   const DEBUG = /[?&]debug=1/.test(location.search);
   const dbgEl = $('dbg'), dbgLines = [], t00 = Date.now();

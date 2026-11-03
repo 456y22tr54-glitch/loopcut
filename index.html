@@ -70,6 +70,9 @@
   .stage:-webkit-full-screen { width:100%; height:100%; aspect-ratio:auto; margin:0; border:0; border-radius:0; }
   .stage.full .fs-bar, .stage:fullscreen .fs-bar, .stage:-webkit-full-screen .fs-bar { display:flex; }
   .stage.full .fs-open, .stage:fullscreen .fs-open, .stage:-webkit-full-screen .fs-open { display:none; }
+  .ver { margin-top:18px; text-align:center; font-size:11px; color:#9aa5b5; }
+  #dbg { position:fixed; left:0; right:0; bottom:0; max-height:36vh; overflow:auto; margin:0; padding:8px 10px; z-index:3000;
+    background:rgba(13,17,23,.93); color:#9fe7ff; font:11px/1.5 ui-monospace,Menlo,Consolas,monospace; white-space:pre-wrap; }
   .placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     color:#8b97a8; font-size:13px; text-align:center; padding:12px; pointer-events:none; }
 
@@ -290,11 +293,26 @@
     </div>
     <div class="hint">YouTubeと動画URLを登録できます（ローカルファイルは登録不可）。リストはこの端末のブラウザに保存されます。PCとスマホで共有するときは「書き出し」→「読み込み」を使います。</div>
   </div>
+  <div class="ver">ver 20261103-c</div>
 </div>
+<pre id="dbg" class="hidden"></pre>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
+  const BUILD = '20261103-c';
+  // diagnostics: open the page with ?debug=1 to see a live event log at the bottom
+  const DEBUG = /[?&]debug=1/.test(location.search);
+  const dbgEl = $('dbg'), dbgLines = [], t00 = Date.now();
+  function dlog(msg) {
+    if (!DEBUG) return;
+    dbgLines.push(((Date.now() - t00) / 1000).toFixed(2) + 's ' + msg);
+    if (dbgLines.length > 60) dbgLines.shift();
+    dbgEl.classList.remove('hidden');
+    dbgEl.textContent = dbgLines.join('\n');
+    dbgEl.scrollTop = dbgEl.scrollHeight;
+  }
+  const ys = () => { try { return yt.getPlayerState(); } catch (e) { return 'n/a'; } };
   const video = $('video'), ytHost = $('ytHost'), placeholder = $('placeholder');
   const startInput = $('startInput'), endInput = $('endInput');
   const timeline = $('timeline'), loopRegion = $('loopRegion');
@@ -415,7 +433,7 @@
       events: {
         onReady: () => { ytReady = true; ytReadyCheck(); },
         onStateChange: onYtState,
-        onError: e => {
+        onError: e => { dlog('YT error ' + e.data);
           const msg = {2:'URLが不正です',5:'再生できない動画です',100:'動画が見つかりません',101:'埋め込みが許可されていません',150:'埋め込みが許可されていません',153:'実行環境のオリジンが不正です（ファイル直開きでは動かない場合があります）'};
           setStatus('ERROR: ' + (msg[e.data] || ('コード ' + e.data)));
           placeholder.classList.remove('hidden'); placeholder.textContent = '読み込みエラー';
@@ -430,6 +448,7 @@
   }
 
   function onYtState(e) {
+    dlog('YT state -> ' + e.data);
     // 5 = cued, 1 = playing, 2 = paused, 0 = ended
     if (e.data === 5) ytReadyCheck();
     ytShield.classList.toggle('playing', e.data === 1 || e.data === 3);
@@ -563,12 +582,15 @@
     if (!was) return;
     const t0 = Date.now();
     [250, 800, 1600].forEach(ms => setTimeout(() => {
-      if (mode && lastUserPause < t0 && !P.playing()) { P.play(); P.setRate(rate); }
+      const need = mode && lastUserPause < t0 && !P.playing();
+      dlog('resume check +' + ms + 'ms: playing=' + P.playing() + ' ytState=' + ys() + ' -> ' + (need ? 'play()' : 'no action'));
+      if (need) { P.play(); P.setRate(rate); }
     }, ms));
   }
   async function enterFull() {
     if (!duration) { setStatus('先に動画を読み込んでください'); return; }
     const was = P.playing();
+    dlog('enterFull: nativeFs=' + nativeFs + ' ios=' + isIOS + ' wasPlaying=' + was + ' ytState=' + ys());
     video.controls = false;
     if (nativeFs) {
       try { await (stageEl.requestFullscreen ? stageEl.requestFullscreen() : stageEl.webkitRequestFullscreen()); resumeIfNeeded(was); return; }
@@ -582,6 +604,7 @@
   }
   function exitFull() {
     const was = P.playing();
+    dlog('exitFull: wasPlaying=' + was);
     video.controls = true;
     if (pseudoFull) { pseudoFull = false; stageEl.classList.remove('full'); document.body.style.overflow = ''; }
     if (nativeFsOn()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); }
@@ -594,12 +617,15 @@
   fsPlay.addEventListener('click', () => playBtn.click());
   fsLoop.addEventListener('click', () => loopRow.click());
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && pseudoFull) exitFull(); });
+  ['resize', 'blur', 'focus', 'pagehide', 'orientationchange'].forEach(ev => window.addEventListener(ev, () => dlog('window ' + ev + ' (' + innerWidth + 'x' + innerHeight + ')')));
+  ['visibilitychange', 'fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => dlog('document ' + ev + ' hidden=' + document.hidden + ' fsEl=' + nativeFsOn())));
+  dlog('build ' + BUILD + ' | ' + navigator.userAgent.slice(0, 100));
   new MutationObserver(() => { fsPlay.textContent = playBtn.textContent; }).observe(playBtn, { childList: true, characterData: true, subtree: true });
   new MutationObserver(() => { fsLoop.textContent = 'リピート ' + loopState.textContent; }).observe(loopState, { childList: true, characterData: true, subtree: true });
 
   playBtn.addEventListener('click', () => {
     if (!mode) return;
-    if (P.playing()) { lastUserPause = Date.now(); P.pause(); return; }
+    if (P.playing()) { lastUserPause = Date.now(); dlog('user pause'); P.pause(); return; }
     if (loopOn) {
       const [s, e] = getRange(), t = P.time();
       if (t < s || t >= e - 0.05) P.seek(s);

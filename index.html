@@ -110,7 +110,9 @@
   .loop-row { display:flex; align-items:center; justify-content:space-between; margin-top:20px; padding:12px 14px;
     background:var(--field); border:1px solid var(--line); border-radius:12px; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent; }
   .loop-row:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .loop-text { display:flex; flex-direction:column; gap:2px; min-width:0; }
   .loop-label { font-size:15px; font-weight:600; }
+  .loop-sub { font-size:12px; color:var(--muted); }
   .loop-right { display:flex; align-items:center; gap:10px; }
   .loop-state { font-size:13px; font-weight:700; color:var(--muted); min-width:26px; text-align:right; }
   .loop-state.on { color:#1f9d45; }
@@ -212,7 +214,7 @@
   </div>
 
   <div class="loop-row" id="loopRow" role="switch" aria-checked="true" tabindex="0">
-    <span class="loop-label">区間をリピート</span>
+    <span class="loop-text"><span class="loop-label">区間をリピート</span><span class="loop-sub" id="loopSub">開始〜終了を繰り返します</span></span>
     <span class="loop-right"><span class="loop-state on" id="loopState">ON</span><span class="ios-switch on" id="loopSwitch"><span class="knob"></span></span></span>
   </div>
 
@@ -525,6 +527,8 @@
     loopState.classList.toggle('on', on);
     loopState.textContent = on ? 'ON' : 'OFF';
     loopRow.setAttribute('aria-checked', String(on));
+    $('loopSub').textContent = on ? '開始〜終了を繰り返します' : '動画を通常どおり再生します（区間は無視）';
+    $('resetBtn').textContent = on ? '区間の先頭へ' : '最初から';
   }
   loopRow.addEventListener('click', () => setLoop(!loopOn));
   loopRow.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setLoop(!loopOn); } });
@@ -532,8 +536,10 @@
   playBtn.addEventListener('click', () => {
     if (!mode) return;
     if (P.playing()) { P.pause(); return; }
-    const [s, e] = getRange(), t = P.time();
-    if (t < s || t >= e - 0.05) P.seek(s);
+    if (loopOn) {
+      const [s, e] = getRange(), t = P.time();
+      if (t < s || t >= e - 0.05) P.seek(s);
+    }
     P.play();
     P.setRate(rate);
     if (mode === 'yt' && !played) {
@@ -541,7 +547,7 @@
       fbTimer = setTimeout(() => { if (!played) { passThrough = true; updateShield(); } }, 1800);
     }
   });
-  $('resetBtn').addEventListener('click', () => { if (mode) P.seek(getRange()[0]); });
+  $('resetBtn').addEventListener('click', () => { if (mode) P.seek(loopOn ? getRange()[0] : 0); });
 
   // ---------- saved list ----------
   const savedList = $('savedList'), saveBtn = $('saveBtn'), overwriteBtn = $('overwriteBtn'), saveName = $('saveName');
@@ -722,12 +728,9 @@
     const t = P.time();
     playhead.style.left = (clamp(t / duration, 0, 1) * 100) + '%';
     $('labelNow').textContent = fmt(t);
-    if (!P.playing()) return;
+    if (!loopOn || !P.playing()) return;      // repeat OFF = ordinary playback, segment ignored
     const [s, e] = getRange();
-    if (e > s && t >= e) {
-      if (loopOn) P.seek(s);
-      else P.pause();
-    }
+    if (e > s && t >= e) P.seek(s);
   }, 50);
 })();
 </script>

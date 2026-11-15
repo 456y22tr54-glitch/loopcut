@@ -171,6 +171,10 @@
   .item-btn { width:38px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--muted);
     cursor:pointer; font-size:14px; padding:0; }
   .item-btn:hover { color:var(--accent); border-color:var(--accent); }
+  .item-move { display:flex; flex-direction:column; gap:4px; width:34px; flex:none; }
+  .item-move button { flex:1; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--muted); cursor:pointer; font-size:11px; padding:0; line-height:1; }
+  .item-move button:hover:not(:disabled) { color:var(--accent); border-color:var(--accent); }
+  .item-move button:disabled { opacity:.3; cursor:default; }
   .item-btn.del:hover { color:var(--danger); border-color:var(--danger); }
   .empty { font-size:13px; color:var(--muted); padding:10px 2px; line-height:1.6; }
   .io-row { display:flex; gap:6px; margin-top:12px; }
@@ -297,14 +301,14 @@
     </div>
     <div class="hint">YouTubeと動画URLを登録できます（ローカルファイルは登録不可）。リストはこの端末のブラウザに保存されます。PCとスマホで共有するときは「書き出し」→「読み込み」を使います。</div>
   </div>
-  <div class="ver">ver 20261103-g</div>
+  <div class="ver">ver 20261115-h</div>
 </div>
 <pre id="dbg" class="hidden"></pre>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const BUILD = '20261103-g';
+  const BUILD = '20261115-h';
   // diagnostics: open the page with ?debug=1 to see a live event log at the bottom
   const DEBUG = /[?&]debug=1/.test(location.search);
   const dbgEl = $('dbg'), dbgLines = [], t00 = Date.now();
@@ -710,7 +714,7 @@
       d.textContent = 'まだ登録がありません。動画を読み込み、区間と速度を決めて「登録」を押してください。';
       savedList.appendChild(d);
     }
-    items.forEach(it => {
+    items.forEach((it, idx) => {
       const row = document.createElement('div');
       row.className = 'item' + (it.id === activeId ? ' active' : '');
       const main = document.createElement('button');
@@ -732,7 +736,19 @@
         if (activeId === it.id) activeId = null;
         persist(); renderList(); updateSaveButtons();
       });
-      row.append(main, ren, del);
+      const mv = document.createElement('div'); mv.className = 'item-move';
+      const move = (d) => {
+        const i = items.findIndex(x => x.id === it.id), j = i + d;
+        if (i < 0 || j < 0 || j >= items.length) return;
+        const [x] = items.splice(i, 1); items.splice(j, 0, x);
+        persist(); renderList();
+      };
+      const up = document.createElement('button'); up.type = 'button'; up.textContent = '▲'; up.title = '上へ'; up.disabled = idx === 0;
+      up.addEventListener('click', () => move(-1));
+      const dn = document.createElement('button'); dn.type = 'button'; dn.textContent = '▼'; dn.title = '下へ'; dn.disabled = idx === items.length - 1;
+      dn.addEventListener('click', () => move(1));
+      mv.append(up, dn);
+      row.append(mv, main, ren, del);
       savedList.appendChild(row);
     });
     updateSaveButtons();

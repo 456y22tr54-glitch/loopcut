@@ -184,7 +184,7 @@
   .io-row { display:flex; gap:6px; margin-top:12px; }
   .io-row .small-btn { flex:1; padding:9px 0; text-align:center; }
 
-  /* ===== compact layout (20261115-p): keep the registered list close to the player ===== */
+  /* ===== compact layout (20261115-q): keep the registered list close to the player ===== */
   .brand { margin-bottom:10px; padding-bottom:10px; }
   .stage { margin-bottom:8px; }
   .timeline-wrap { margin-bottom:8px; }
@@ -264,6 +264,13 @@
   .adv .fields { margin-bottom:0; }
   .adv .presets { margin-top:8px; }
 
+  /* full-screen bar, all orientations: slim buttons that always fit the width */
+  .fs-bar { gap:8px; padding:18px 12px calc(8px + env(safe-area-inset-bottom)); }
+  .fs-bar button { flex:1 1 0; min-width:0; padding:7px 0; min-height:36px; font-size:13px; border-radius:8px; white-space:nowrap; }
+  .fs-bar #fsLoop { gap:6px; }
+  .fs-bar .ios-switch.mini { width:36px; height:22px; border-radius:11px; }
+  .fs-bar .ios-switch.mini .knob { width:18px; height:18px; }
+  .fs-bar .ios-switch.mini.on .knob { transform:translateX(14px); }
   /* landscape phones: a slim, centred control bar instead of three huge buttons */
   .fs-bar { background:linear-gradient(to top, rgba(0,0,0,.88), rgba(0,0,0,.55) 70%, rgba(0,0,0,0)); }
   @media (max-height:520px) {
@@ -398,14 +405,14 @@
   </div>
     <div class="name-row"><label class="cap" for="saveName">登録名（任意。空欄なら動画タイトル）</label><input type="text" id="saveName" maxlength="60" placeholder="例：套路 第一段 ゆっくり" autocomplete="off"></div>
   </details>
-  <div class="ver">ver 20261115-p</div>
+  <div class="ver">ver 20261115-q</div>
 </div>
 <pre id="dbg" class="hidden"></pre>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const BUILD = '20261115-p';
+  const BUILD = '20261115-q';
   // diagnostics: open the page with ?debug=1 to see a live event log at the bottom
   const DEBUG = /[?&]debug=1/.test(location.search);
   const dbgEl = $('dbg'), dbgLines = [], t00 = Date.now();

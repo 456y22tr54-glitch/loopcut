@@ -183,6 +183,69 @@
   .empty { font-size:13px; color:var(--muted); padding:10px 2px; line-height:1.6; }
   .io-row { display:flex; gap:6px; margin-top:12px; }
   .io-row .small-btn { flex:1; padding:9px 0; text-align:center; }
+
+  /* ===== compact layout (20261115-k): keep the registered list close to the player ===== */
+  .brand { margin-bottom:10px; padding-bottom:10px; }
+  .stage { margin-bottom:8px; }
+  .timeline-wrap { margin-bottom:8px; }
+  .timeline { height:32px; margin-top:6px; }
+  .time-labels { margin-top:4px; }
+  .fields { gap:8px; margin-bottom:6px; }
+  .field { display:flex; align-items:center; gap:5px; min-width:0; }
+  .field label.cap { margin:0; white-space:nowrap; font-size:12px; }
+  .field-row { flex:1; min-width:0; gap:4px; }
+  input[type=number] { min-width:0; flex:1; padding:7px 4px 7px 8px; font-size:16px; }
+  .set-btn { padding:0 6px; font-size:11px; }
+  .speed { margin:8px 0 0; }
+  .speed { display:grid; grid-template-columns:auto 1fr auto; align-items:center; column-gap:10px; }
+  .speed-head { display:contents; }
+  .speed-head .cap { grid-column:1; }
+  .speed-head .val { grid-column:3; grid-row:1; font-size:15px; min-width:52px; text-align:right; }
+  .speed input[type=range] { grid-column:2; grid-row:1; }
+  .presets { grid-column:1 / -1; margin-top:8px; gap:5px; }
+  .preset { padding:5px 0; font-size:12px; }
+  .loop-row { margin-top:8px; padding:6px 12px; border-radius:10px; }
+  .loop-label { font-size:14px; }
+  .loop-sub { display:none; }
+  .ios-switch { width:46px; height:28px; border-radius:14px; }
+  .ios-switch .knob { width:24px; height:24px; }
+  .ios-switch.on .knob { transform:translateX(18px); }
+  .buttons { margin-top:8px; gap:8px; }
+  .buttons .btn-play { grid-column:auto; }
+  .main-btn { padding:10px 4px; font-size:14px; }
+  .name-row { margin-top:8px; display:flex; gap:8px; }
+  .name-row input[type=text] { flex:1; width:auto; min-width:0; padding:8px 10px; }
+  .name-row .btn-save { flex:none; width:92px; padding:8px 0; }
+  .status { margin-top:6px; font-size:11px; min-height:14px; }
+  .saved { margin-top:8px; padding-top:10px; }
+  .saved-head { margin-bottom:6px; }
+  .save-row { display:none; }
+  .item { margin-bottom:6px; }
+  .item-main { padding:6px 10px; }
+  .item-meta { margin-top:1px; }
+  .item-btn { width:34px; }
+  .item-move { width:30px; }
+  .io-row { margin-top:8px; }
+  .io-row .small-btn { padding:7px 0; }
+  .loader { margin-top:12px; padding-top:0; border-top:1px solid var(--line); }
+  .loader summary { list-style:none; cursor:pointer; padding:12px 2px 8px; font-size:13px; font-weight:600; color:var(--accent); user-select:none; -webkit-tap-highlight-color:transparent; }
+  .loader summary::-webkit-details-marker { display:none; }
+  .loader[open] summary { padding-bottom:10px; }
+  .ver { margin-top:12px; }
+  @media (max-width:600px) {
+    body { padding:8px 8px 40px; }
+    .device { padding:12px 12px 14px; border-radius:12px; }
+  }
+
+  /* one row: repeat switch | back to start | play */
+  .buttons { grid-template-columns:1.15fr 1fr 1fr; align-items:stretch; }
+  .buttons .loop-row { margin:0; padding:0 10px; border-radius:10px; gap:6px; min-width:0; }
+  .buttons .loop-label { font-size:13px; white-space:nowrap; }
+  .buttons .loop-state { display:none; }
+  .buttons .ios-switch { width:42px; height:26px; border-radius:13px; }
+  .buttons .ios-switch .knob { width:22px; height:22px; }
+  .buttons .ios-switch.on .knob { transform:translateX(16px); }
+  .buttons .main-btn { white-space:nowrap; }
 </style>
 </head>
 <body>
@@ -218,14 +281,14 @@
 
   <div class="fields">
     <div class="field">
-      <label class="cap">開始（秒）</label>
+      <label class="cap" title="秒">開始</label>
       <div class="field-row">
         <input type="number" id="startInput" min="0" step="0.1" value="0">
         <button class="set-btn" id="setStartBtn">現在位置</button>
       </div>
     </div>
     <div class="field">
-      <label class="cap">終了（秒）</label>
+      <label class="cap" title="秒">終了</label>
       <div class="field-row">
         <input type="number" id="endInput" min="0" step="0.1" value="10">
         <button class="set-btn" id="setEndBtn">現在位置</button>
@@ -246,21 +309,36 @@
     </div>
   </div>
 
-  <div class="loop-row" id="loopRow" role="switch" aria-checked="true" tabindex="0">
-    <span class="loop-text"><span class="loop-label">区間をリピート</span><span class="loop-sub" id="loopSub">開始〜終了を繰り返します</span></span>
+  <div class="buttons">
+    <div class="loop-row" id="loopRow" role="switch" aria-checked="true" tabindex="0">
+    <span class="loop-text"><span class="loop-label">リピート</span><span class="loop-sub" id="loopSub">開始〜終了を繰り返します</span></span>
     <span class="loop-right"><span class="loop-state on" id="loopState">ON</span><span class="ios-switch on" id="loopSwitch"><span class="knob"></span></span></span>
   </div>
-
-  <div class="name-row"><input type="text" id="saveName" maxlength="60" placeholder="登録名（空欄なら動画タイトル）" autocomplete="off"></div>
-  <div class="buttons">
+    <button class="main-btn btn-reset" id="resetBtn">先頭へ</button>
     <button class="main-btn btn-play" id="playBtn" disabled>再生</button>
-    <button class="main-btn btn-reset" id="resetBtn">区間の先頭へ</button>
+  </div>
+  <div class="name-row">
+    <input type="text" id="saveName" maxlength="60" placeholder="登録名（空欄なら自動）" autocomplete="off">
     <button class="main-btn btn-save" id="quickSaveBtn" disabled>登録</button>
   </div>
   <div class="status" id="statusText">STANDBY</div>
 
-  <div class="loader">
-    <div class="saved-head"><span class="cap" style="margin:0">新しい動画を読み込む</span></div>
+  <div class="saved">
+    <div class="saved-head"><span class="cap" style="margin:0">登録リスト</span><span class="count" id="savedCount"></span></div>
+    <div class="save-row">
+      <button class="small-btn primary" id="saveBtn" disabled>登録</button>
+      <button class="small-btn hidden" id="overwriteBtn">上書き</button>
+    </div>
+    <div id="savedList"></div>
+    <div class="io-row">
+      <button class="small-btn" id="exportBtn">書き出し</button>
+      <button class="small-btn" id="importBtn">読み込み</button>
+      <input type="file" id="importInput" accept=".json,application/json" class="hidden">
+    </div>
+    <div class="hint">YouTubeと動画URLを登録できます（ローカルファイルは不可）。リストはこのブラウザに保存されます。PCとスマホで共有するときは「書き出し」→「読み込み」。</div>
+  </div>
+  <details class="loader" id="loaderBox">
+    <summary>＋ 新しい動画を読み込む</summary>
   <div class="tabs">
     <div class="tab-btn active" data-tab="yt">YouTube</div>
     <div class="tab-btn" data-tab="file">ファイル</div>
@@ -289,30 +367,15 @@
     </div>
     <div class="hint">OneDriveの共有リンクは、末尾を ?download=1 にすると直リンクになることがあります。</div>
   </div>
-  </div>
-
-  <div class="saved">
-    <div class="saved-head"><span class="cap" style="margin:0">登録リスト</span><span class="count" id="savedCount"></span></div>
-    <div class="save-row">
-      <button class="small-btn primary" id="saveBtn" disabled>登録</button>
-      <button class="small-btn hidden" id="overwriteBtn">上書き</button>
-    </div>
-    <div id="savedList"></div>
-    <div class="io-row">
-      <button class="small-btn" id="exportBtn">書き出し</button>
-      <button class="small-btn" id="importBtn">読み込み</button>
-      <input type="file" id="importInput" accept=".json,application/json" class="hidden">
-    </div>
-    <div class="hint">YouTubeと動画URLを登録できます（ローカルファイルは登録不可）。リストはこの端末のブラウザに保存されます。PCとスマホで共有するときは「書き出し」→「読み込み」を使います。</div>
-  </div>
-  <div class="ver">ver 20261115-i</div>
+  </details>
+  <div class="ver">ver 20261115-k</div>
 </div>
 <pre id="dbg" class="hidden"></pre>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const BUILD = '20261115-i';
+  const BUILD = '20261115-k';
   // diagnostics: open the page with ?debug=1 to see a live event log at the bottom
   const DEBUG = /[?&]debug=1/.test(location.search);
   const dbgEl = $('dbg'), dbgLines = [], t00 = Date.now();
@@ -420,7 +483,7 @@
 
   function loadYouTube(id) {
     currentSource = { type: 'yt', ref: id };
-    if (!loadingFromList) { activeId = null; renderList(); }
+    if (!loadingFromList) { activeId = null; renderList(); loaderBox.open = false; }
     if (!ytApiReady) {
       pendingVideoId = id;
       pendingKeep = loadingFromList;
@@ -485,7 +548,7 @@
   // ---------- local file / direct URL ----------
   function loadVideoSrc(src, source) {
     currentSource = source || null;
-    if (!loadingFromList) { activeId = null; renderList(); }
+    if (!loadingFromList) { activeId = null; renderList(); loaderBox.open = false; }
     if (yt && ytReady) yt.pauseVideo();
     ytHost.classList.add('hidden');
     video.classList.remove('hidden');
@@ -579,7 +642,7 @@
     loopState.textContent = on ? 'ON' : 'OFF';
     loopRow.setAttribute('aria-checked', String(on));
     $('loopSub').textContent = on ? '開始〜終了を繰り返します' : '動画を通常どおり再生します（区間は無視）';
-    $('resetBtn').textContent = on ? '区間の先頭へ' : '最初から';
+    $('resetBtn').textContent = on ? '先頭へ' : '最初から';
   }
   loopRow.addEventListener('click', () => setLoop(!loopOn));
   loopRow.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setLoop(!loopOn); } });
@@ -667,6 +730,7 @@
   // ---------- saved list ----------
   const savedList = $('savedList'), saveBtn = $('saveBtn'), overwriteBtn = $('overwriteBtn'), saveName = $('saveName');
   const quickSave = $('quickSaveBtn');
+  const loaderBox = $('loaderBox');
   let items = [];
 
   function loadItems() {
@@ -835,6 +899,7 @@
 
   loadItems();
   renderList();
+  loaderBox.open = !items.length;   // empty list: show the loader; otherwise keep the list near the top
 
   // ---------- YouTube API loader (callback is defined first; polling + retries cover missed events) ----------
   let apiTries = 0;

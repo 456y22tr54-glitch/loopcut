@@ -184,7 +184,7 @@
   .io-row { display:flex; gap:6px; margin-top:12px; }
   .io-row .small-btn { flex:1; padding:9px 0; text-align:center; }
 
-  /* ===== compact layout (20261115-k): keep the registered list close to the player ===== */
+  /* ===== compact layout (20261115-n): keep the registered list close to the player ===== */
   .brand { margin-bottom:10px; padding-bottom:10px; }
   .stage { margin-bottom:8px; }
   .timeline-wrap { margin-bottom:8px; }
@@ -246,6 +246,23 @@
   .buttons .ios-switch .knob { width:22px; height:22px; }
   .buttons .ios-switch.on .knob { transform:translateX(16px); }
   .buttons .main-btn { white-space:nowrap; }
+
+  /* register button lives in the list header; the name field is inside the loader panel */
+  .saved-head { align-items:center; }
+  .saved-head .btn-save { flex:none; width:auto; padding:6px 16px; font-size:13px; border-radius:8px; }
+  .loader .name-row { display:block; margin-top:12px; }
+  .loader .name-row .cap { margin:0 0 4px; }
+  .loader .name-row input[type=text] { width:100%; }
+
+  /* numeric start/end and speed preset buttons are folded away */
+  .adv { margin-top:6px; }
+  .adv summary { list-style:none; cursor:pointer; padding:6px 2px; font-size:12px; font-weight:600; color:var(--accent); user-select:none; -webkit-tap-highlight-color:transparent; }
+  .adv summary::-webkit-details-marker { display:none; }
+  .adv summary::before { content:'＋ '; }
+  .adv[open] summary::before { content:'－ '; }
+  .adv[open] summary { padding-bottom:8px; }
+  .adv .fields { margin-bottom:0; }
+  .adv .presets { margin-top:8px; }
 </style>
 </head>
 <body>
@@ -279,26 +296,28 @@
     <div class="time-labels"><span id="labelNow">0:00.0</span><span id="labelTotal">0:00.0</span></div>
   </div>
 
-  <div class="fields">
-    <div class="field">
-      <label class="cap" title="秒">開始</label>
-      <div class="field-row">
-        <input type="number" id="startInput" min="0" step="0.1" value="0">
-        <button class="set-btn" id="setStartBtn">現在位置</button>
-      </div>
-    </div>
-    <div class="field">
-      <label class="cap" title="秒">終了</label>
-      <div class="field-row">
-        <input type="number" id="endInput" min="0" step="0.1" value="10">
-        <button class="set-btn" id="setEndBtn">現在位置</button>
-      </div>
-    </div>
-  </div>
-
   <div class="speed">
     <div class="speed-head"><span class="cap" style="margin:0">再生速度</span><span class="val" id="speedVal">1.00×</span></div>
     <input type="range" id="speedSlider" min="0.25" max="2" step="0.05" value="1">
+  </div>
+  <details class="adv" id="advBox">
+    <summary>詳細設定（開始・終了・速度）</summary>
+    <div class="fields">
+      <div class="field">
+        <label class="cap" title="秒">開始</label>
+        <div class="field-row">
+          <input type="number" id="startInput" min="0" step="0.1" value="0">
+          <button class="set-btn" id="setStartBtn">現在位置</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="cap" title="秒">終了</label>
+        <div class="field-row">
+          <input type="number" id="endInput" min="0" step="0.1" value="10">
+          <button class="set-btn" id="setEndBtn">現在位置</button>
+        </div>
+      </div>
+    </div>
     <div class="presets" id="presets">
       <button class="preset" data-r="0.25">0.25</button>
       <button class="preset" data-r="0.5">0.5</button>
@@ -307,7 +326,7 @@
       <button class="preset" data-r="1.25">1.25</button>
       <button class="preset" data-r="1.5">1.5</button>
     </div>
-  </div>
+  </details>
 
   <div class="buttons">
     <div class="loop-row" id="loopRow" role="switch" aria-checked="true" tabindex="0">
@@ -317,14 +336,10 @@
     <button class="main-btn btn-reset" id="resetBtn">先頭へ</button>
     <button class="main-btn btn-play" id="playBtn" disabled>再生</button>
   </div>
-  <div class="name-row">
-    <input type="text" id="saveName" maxlength="60" placeholder="登録名（空欄なら自動）" autocomplete="off">
-    <button class="main-btn btn-save" id="quickSaveBtn" disabled>登録</button>
-  </div>
   <div class="status" id="statusText">STANDBY</div>
 
   <div class="saved">
-    <div class="saved-head"><span class="cap" style="margin:0">登録リスト</span><span class="count" id="savedCount"></span></div>
+    <div class="saved-head"><span class="cap" style="margin:0">登録リスト <span class="count" id="savedCount"></span></span><button class="main-btn btn-save" id="quickSaveBtn" disabled>登録</button></div>
     <div class="save-row">
       <button class="small-btn primary" id="saveBtn" disabled>登録</button>
       <button class="small-btn hidden" id="overwriteBtn">上書き</button>
@@ -367,15 +382,16 @@
     </div>
     <div class="hint">OneDriveの共有リンクは、末尾を ?download=1 にすると直リンクになることがあります。</div>
   </div>
+    <div class="name-row"><label class="cap" for="saveName">登録名（任意。空欄なら動画タイトル）</label><input type="text" id="saveName" maxlength="60" placeholder="例：套路 第一段 ゆっくり" autocomplete="off"></div>
   </details>
-  <div class="ver">ver 20261115-k</div>
+  <div class="ver">ver 20261115-n</div>
 </div>
 <pre id="dbg" class="hidden"></pre>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const BUILD = '20261115-k';
+  const BUILD = '20261115-n';
   // diagnostics: open the page with ?debug=1 to see a live event log at the bottom
   const DEBUG = /[?&]debug=1/.test(location.search);
   const dbgEl = $('dbg'), dbgLines = [], t00 = Date.now();

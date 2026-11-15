@@ -184,7 +184,7 @@
   .io-row { display:flex; gap:6px; margin-top:12px; }
   .io-row .small-btn { flex:1; padding:9px 0; text-align:center; }
 
-  /* ===== compact layout (20261115-n): keep the registered list close to the player ===== */
+  /* ===== compact layout (20261115-p): keep the registered list close to the player ===== */
   .brand { margin-bottom:10px; padding-bottom:10px; }
   .stage { margin-bottom:8px; }
   .timeline-wrap { margin-bottom:8px; }
@@ -263,6 +263,20 @@
   .adv[open] summary { padding-bottom:8px; }
   .adv .fields { margin-bottom:0; }
   .adv .presets { margin-top:8px; }
+
+  /* landscape phones: a slim, centred control bar instead of three huge buttons */
+  .fs-bar { background:linear-gradient(to top, rgba(0,0,0,.88), rgba(0,0,0,.55) 70%, rgba(0,0,0,0)); }
+  @media (max-height:520px) {
+    .fs-bar { justify-content:center; gap:8px; padding:14px 12px calc(6px + env(safe-area-inset-bottom)); }
+    .fs-bar button { flex:0 1 150px; padding:6px 0; min-height:34px; font-size:13px; border-radius:8px; }
+    .fs-bar #fsLoop { gap:8px; }
+    .fs-bar .ios-switch.mini { width:36px; height:22px; border-radius:11px; }
+    .fs-bar .ios-switch.mini .knob { width:18px; height:18px; }
+    .fs-bar .ios-switch.mini.on .knob { transform:translateX(14px); }
+  }
+
+  /* full screen: buttons disappear while playing, tap the picture to pause and bring them back */
+  .stage.full.is-playing .fs-bar, .stage:fullscreen.is-playing .fs-bar, .stage:-webkit-full-screen.is-playing .fs-bar { display:none; }
 </style>
 </head>
 <body>
@@ -384,14 +398,14 @@
   </div>
     <div class="name-row"><label class="cap" for="saveName">登録名（任意。空欄なら動画タイトル）</label><input type="text" id="saveName" maxlength="60" placeholder="例：套路 第一段 ゆっくり" autocomplete="off"></div>
   </details>
-  <div class="ver">ver 20261115-n</div>
+  <div class="ver">ver 20261115-p</div>
 </div>
 <pre id="dbg" class="hidden"></pre>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const BUILD = '20261115-n';
+  const BUILD = '20261115-p';
   // diagnostics: open the page with ?debug=1 to see a live event log at the bottom
   const DEBUG = /[?&]debug=1/.test(location.search);
   const dbgEl = $('dbg'), dbgLines = [], t00 = Date.now();
@@ -515,7 +529,7 @@
     if (yt && ytReady) { yt.cueVideoById(id); return; }
     // The host div is replaced by the iframe once; keep a fresh child container
     ytHost.innerHTML = '<div id="ytInner"></div>';
-    const pv = { playsinline: 1, rel: 0, modestbranding: 1, fs: 0, disablekb: 1, iv_load_policy: 3 };
+    const pv = { playsinline: 1, rel: 0, modestbranding: 1, fs: 0, disablekb: 1, iv_load_policy: 3, cc_load_policy: 0 };
     // PC/Android: our own controls replace YouTube's. iPhone keeps YouTube's big first-play button.
     if (!isIOS) pv.controls = 0;
     if (/^https?:$/.test(location.protocol)) pv.origin = location.origin;
@@ -540,13 +554,19 @@
     if (d > 0) onLoaded(d); else setTimeout(ytReadyCheck, 200);
   }
 
+  // The YouTube account's own caption setting can show subtitles; turn the caption modules off (best effort).
+  function hideCaptions() {
+    try { yt.unloadModule('captions'); } catch (e) {}
+    try { yt.unloadModule('cc'); } catch (e) {}
+  }
+
   function onYtState(e) {
     dlog('YT state -> ' + e.data);
     // 5 = cued, 1 = playing, 2 = paused, 0 = ended
     if (e.data === 5) ytReadyCheck();
     ytShield.classList.toggle('playing', e.data === 1 || e.data === 3);
     if (e.data === 1) { played = true; passThrough = false; clearTimeout(fbTimer); updateShield(); }
-    if (e.data === 1) { playBtn.textContent = '一時停止'; setStatus('PLAYING'); P.setRate(rate); }
+    if (e.data === 1) { playBtn.textContent = '一時停止'; setStatus('PLAYING'); P.setRate(rate); hideCaptions(); }
     if (e.data === 2) { playBtn.textContent = '再生'; setStatus('PAUSED'); }
     if (e.data === 0) {
       if (loopOn) { P.seek(clamp(parseFloat(startInput.value) || 0, 0, duration)); P.play(); }
@@ -720,7 +740,13 @@
     }
   });
   dlog('build ' + BUILD + ' | ' + navigator.userAgent.slice(0, 100));
-  new MutationObserver(() => { fsPlay.textContent = playBtn.textContent; }).observe(playBtn, { childList: true, characterData: true, subtree: true });
+  new MutationObserver(() => {
+    fsPlay.textContent = playBtn.textContent;
+    // while playing in full screen the buttons are hidden (like the centre ▶); pausing brings them back
+    stageEl.classList.toggle('is-playing', playBtn.textContent === '一時停止');
+  }).observe(playBtn, { childList: true, characterData: true, subtree: true });
+  // plain video files have no controls in full screen: tap the picture to play / pause
+  video.addEventListener('click', () => { if (inFull()) playBtn.click(); });
   new MutationObserver(() => {
     const on = loopState.textContent === 'ON';
     fsLoop.querySelector('.ios-switch').classList.toggle('on', on);

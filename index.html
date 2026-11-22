@@ -184,7 +184,7 @@
   .io-row { display:flex; gap:6px; margin-top:12px; }
   .io-row .small-btn { flex:1; padding:9px 0; text-align:center; }
 
-  /* ===== compact layout (20261115-q): keep the registered list close to the player ===== */
+  /* ===== compact layout (20261121-u): keep the registered list close to the player ===== */
   .brand { margin-bottom:10px; padding-bottom:10px; }
   .stage { margin-bottom:8px; }
   .timeline-wrap { margin-bottom:8px; }
@@ -284,6 +284,19 @@
 
   /* full screen: buttons disappear while playing, tap the picture to pause and bring them back */
   .stage.full.is-playing .fs-bar, .stage:fullscreen.is-playing .fs-bar, .stage:-webkit-full-screen.is-playing .fs-bar { display:none; }
+
+  /* link button in each row + URL list panel */
+  a.item-btn.link { display:flex; align-items:center; justify-content:center; text-decoration:none; color:var(--muted); }
+  a.item-btn.link:hover { color:var(--accent); border-color:var(--accent); }
+  .urls { margin-top:8px; }
+  .urls summary { list-style:none; cursor:pointer; padding:6px 2px; font-size:12px; font-weight:600; color:var(--accent); user-select:none; -webkit-tap-highlight-color:transparent; }
+  .urls summary::-webkit-details-marker { display:none; }
+  .urls summary::before { content:'＋ '; }
+  .urls[open] summary::before { content:'－ '; }
+  .urls .small-btn { width:100%; padding:8px 0; margin-bottom:8px; }
+  .ul-row { padding:6px 2px; border-top:1px solid var(--line); }
+  .ul-name { font-size:13px; font-weight:600; }
+  .ul-link { display:block; font-size:12px; color:var(--accent); word-break:break-all; }
 </style>
 </head>
 <body>
@@ -371,6 +384,10 @@
       <button class="small-btn" id="importBtn">読み込み</button>
       <input type="file" id="importInput" accept=".json,application/json" class="hidden">
     </div>
+    <details class="urls" id="urlsBox">
+      <summary>URL一覧（確認・コピー）</summary>
+      <div id="urlsBody"></div>
+    </details>
     <div class="hint">YouTubeと動画URLを登録できます（ローカルファイルは不可）。リストはこのブラウザに保存されます。PCとスマホで共有するときは「書き出し」→「読み込み」。</div>
   </div>
   <details class="loader" id="loaderBox">
@@ -405,14 +422,14 @@
   </div>
     <div class="name-row"><label class="cap" for="saveName">登録名（任意。空欄なら動画タイトル）</label><input type="text" id="saveName" maxlength="60" placeholder="例：套路 第一段 ゆっくり" autocomplete="off"></div>
   </details>
-  <div class="ver">ver 20261115-q</div>
+  <div class="ver">ver 20261121-u</div>
 </div>
 <pre id="dbg" class="hidden"></pre>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const BUILD = '20261115-q';
+  const BUILD = '20261121-u';
   // diagnostics: open the page with ?debug=1 to see a live event log at the bottom
   const DEBUG = /[?&]debug=1/.test(location.search);
   const dbgEl = $('dbg'), dbgLines = [], t00 = Date.now();
@@ -822,6 +839,31 @@
     (hasActive ? overwriteBtn : saveBtn).click();
   });
 
+  const urlOf = it => (it.type === 'yt' ? 'https://www.youtube.com/watch?v=' + it.ref : it.ref);
+
+  function renderUrls() {
+    const box = $('urlsBody');
+    if (!$('urlsBox').open) return;
+    box.innerHTML = '';
+    if (!items.length) { box.textContent = 'まだ登録がありません。'; return; }
+    const copy = document.createElement('button');
+    copy.type = 'button'; copy.className = 'small-btn'; copy.textContent = 'すべてコピー（Excelに貼り付け可）';
+    copy.addEventListener('click', () => {
+      const text = ['名前\tURL\t開始(秒)\t終了(秒)\t速度'].concat(items.map(it => [it.name, urlOf(it), it.start, it.end, it.rate].join('\t'))).join('\n');
+      const done = ok => { copy.textContent = ok ? 'コピーしました' : 'コピーできませんでした'; setTimeout(() => { copy.textContent = 'すべてコピー（Excelに貼り付け可）'; }, 2000); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => done(true), () => done(false));
+      else { try { const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); done(document.execCommand('copy')); t.remove(); } catch (e) { done(false); } }
+    });
+    box.appendChild(copy);
+    items.forEach(it => {
+      const d = document.createElement('div'); d.className = 'ul-row';
+      const n = document.createElement('div'); n.className = 'ul-name'; n.textContent = it.name;
+      const a = document.createElement('a'); a.className = 'ul-link'; a.href = urlOf(it); a.target = '_blank'; a.rel = 'noopener'; a.textContent = urlOf(it);
+      d.append(n, a); box.appendChild(d);
+    });
+  }
+  $('urlsBox').addEventListener('toggle', renderUrls);
+
   function renderList() {
     $('savedCount').textContent = items.length ? items.length + '件' : '';
     savedList.innerHTML = '';
@@ -865,10 +907,13 @@
       const dn = document.createElement('button'); dn.type = 'button'; dn.textContent = '▼'; dn.title = '下へ'; dn.disabled = idx === items.length - 1;
       dn.addEventListener('click', () => move(1));
       mv.append(up, dn);
-      row.append(mv, main, ren, del);
+      const lk = document.createElement('a'); lk.className = 'item-btn link'; lk.textContent = '↗'; lk.title = '元の動画をYouTube（またはURL）で開く';
+      lk.href = urlOf(it); lk.target = '_blank'; lk.rel = 'noopener';
+      row.append(mv, main, ren, lk, del);
       savedList.appendChild(row);
     });
     updateSaveButtons();
+    renderUrls();
   }
 
   function loadItem(id) {
@@ -949,6 +994,36 @@
   loadItems();
   renderList();
   loaderBox.open = !items.length;   // empty list: show the loader; otherwise keep the list near the top
+
+  // ---------- shared list: list.json next to this page is merged in on every start ----------
+  // New entries are added; entries already present, or imported before and then deleted by the user, are not added again.
+  (function loadSharedList() {
+    const SEEN_KEY = 'loopcut.seen.v1';
+    const keyOf = x => [x.type, x.ref, x.start, x.end, x.rate].join('|');
+    let seen = [];
+    try { seen = JSON.parse(localStorage.getItem(SEEN_KEY) || '[]'); } catch (e) {}
+    if (!Array.isArray(seen)) seen = [];
+    fetch('list.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        const arr = data && (Array.isArray(data) ? data : data.items);
+        if (!arr) return;
+        let added = 0;
+        arr.filter(validItem).forEach(x => {
+          const k = keyOf(x);
+          if (seen.includes(k)) return;
+          seen.push(k);
+          if (!items.some(y => keyOf(y) === k)) { items.push(Object.assign({}, x, { id: newId() })); added++; }
+        });
+        try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch (e) {}
+        if (added) {
+          persist(); renderList(); updateSaveButtons();
+          loaderBox.open = false;
+          setStatus('共有リスト: ' + added + '件を追加しました');
+        }
+      })
+      .catch(() => {});
+  })();
 
   // ---------- YouTube API loader (callback is defined first; polling + retries cover missed events) ----------
   let apiTries = 0;

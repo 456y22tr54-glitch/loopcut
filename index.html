@@ -60,15 +60,9 @@
   .shield.playing .shield-play { display:none; }
   .fs-open { position:absolute; right:8px; top:8px; z-index:20; padding:7px 11px; border:none; border-radius:8px;
     background:rgba(13,17,23,.68); color:#fff; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; }
-  .fs-bar { display:none; position:absolute; left:0; right:0; bottom:0; z-index:20; gap:10px; align-items:center;
-    padding:28px 14px calc(12px + env(safe-area-inset-bottom)); background:linear-gradient(to top, rgba(0,0,0,.72), rgba(0,0,0,0)); }
-  .fs-bar button { flex:1; padding:12px 0; border:none; border-radius:10px; font-size:15px; font-weight:600; font-family:inherit;
-    background:rgba(255,255,255,.92); color:#18212d; cursor:pointer; }
-  .fs-bar button.fs-primary { background:var(--accent); color:#fff; }
   .stage.full { position:fixed; inset:0; z-index:1000; width:100%; height:100vh; height:100dvh; aspect-ratio:auto; margin:0; border:0; border-radius:0; }
   .stage:fullscreen { width:100%; height:100%; aspect-ratio:auto; margin:0; border:0; border-radius:0; }
   .stage:-webkit-full-screen { width:100%; height:100%; aspect-ratio:auto; margin:0; border:0; border-radius:0; }
-  .stage.full .fs-bar, .stage:fullscreen .fs-bar, .stage:-webkit-full-screen .fs-bar { display:flex; }
   .stage.full .fs-open, .stage:fullscreen .fs-open, .stage:-webkit-full-screen .fs-open { display:none; }
   .ver { margin-top:18px; text-align:center; font-size:11px; color:#9aa5b5; }
   #dbg { position:fixed; left:0; right:0; bottom:0; max-height:36vh; overflow:auto; margin:0; padding:8px 10px; z-index:3000;
@@ -135,10 +129,6 @@
   .ios-switch .knob { position:absolute; top:2px; left:2px; width:27px; height:27px; border-radius:50%; background:#fff;
     box-shadow:0 2px 4px rgba(0,0,0,.3); transition:transform .2s; }
   .ios-switch.on { background:#34c759; }
-  .fs-bar #fsLoop { display:flex; align-items:center; justify-content:center; gap:10px; }
-  .ios-switch.mini { width:44px; height:26px; border-radius:13px; }
-  .ios-switch.mini .knob { width:22px; height:22px; }
-  .ios-switch.mini.on .knob { transform:translateX(18px); }
   .ios-switch.on .knob { transform:translateX(20px); }
   .btn-play { grid-column:1 / -1; }
   .btn-save { background:#fff; color:var(--accent); border:1px solid var(--accent); }
@@ -184,7 +174,7 @@
   .io-row { display:flex; gap:6px; margin-top:12px; }
   .io-row .small-btn { flex:1; padding:9px 0; text-align:center; }
 
-  /* ===== compact layout (20261124-v): keep the registered list close to the player ===== */
+  /* ===== compact layout (20261124-w): keep the registered list close to the player ===== */
   .brand { margin-bottom:10px; padding-bottom:10px; }
   .stage { margin-bottom:8px; }
   .timeline-wrap { margin-bottom:8px; }
@@ -263,27 +253,7 @@
   .adv[open] summary { padding-bottom:8px; }
   .adv .fields { margin-bottom:0; }
   .adv .presets { margin-top:8px; }
-
-  /* full-screen bar, all orientations: slim buttons that always fit the width */
-  .fs-bar { gap:8px; padding:18px 12px calc(8px + env(safe-area-inset-bottom)); }
-  .fs-bar button { flex:1 1 0; min-width:0; padding:7px 0; min-height:36px; font-size:13px; border-radius:8px; white-space:nowrap; }
-  .fs-bar #fsLoop { gap:6px; }
-  .fs-bar .ios-switch.mini { width:36px; height:22px; border-radius:11px; }
-  .fs-bar .ios-switch.mini .knob { width:18px; height:18px; }
-  .fs-bar .ios-switch.mini.on .knob { transform:translateX(14px); }
-  /* landscape phones: a slim, centred control bar instead of three huge buttons */
-  .fs-bar { background:linear-gradient(to top, rgba(0,0,0,.88), rgba(0,0,0,.55) 70%, rgba(0,0,0,0)); }
-  @media (max-height:520px) {
-    .fs-bar { justify-content:center; gap:8px; padding:14px 12px calc(6px + env(safe-area-inset-bottom)); }
-    .fs-bar button { flex:0 1 150px; padding:6px 0; min-height:34px; font-size:13px; border-radius:8px; }
-    .fs-bar #fsLoop { gap:8px; }
-    .fs-bar .ios-switch.mini { width:36px; height:22px; border-radius:11px; }
-    .fs-bar .ios-switch.mini .knob { width:18px; height:18px; }
-    .fs-bar .ios-switch.mini.on .knob { transform:translateX(14px); }
-  }
-
-  /* full screen: buttons disappear while playing, tap the picture to pause and bring them back */
-  .stage.full.is-playing .fs-bar, .stage:fullscreen.is-playing .fs-bar, .stage:-webkit-full-screen.is-playing .fs-bar { display:none; }
+  
 
   /* link button in each row + URL list panel */
   a.item-btn.link { display:flex; align-items:center; justify-content:center; text-decoration:none; color:var(--muted); }
@@ -298,20 +268,36 @@
   .ul-name { font-size:13px; font-weight:600; }
   .ul-link { display:block; font-size:12px; color:var(--accent); word-break:break-all; }
 
-  /* full screen: seek bar (visible with the buttons) + thin progress line while playing */
-  .fs-bar { flex-wrap:wrap; }
-  .fs-seek { flex:0 1 100%; max-width:760px; margin:0 auto; display:flex; align-items:center; gap:8px; color:#fff; font-size:12px; font-variant-numeric:tabular-nums; }
-  .fs-seek span { flex:none; min-width:44px; text-align:center; text-shadow:0 1px 2px rgba(0,0,0,.6); }
-  .fs-seek-wrap { position:relative; flex:1; height:28px; }
-  .fs-seek-trk { position:absolute; left:0; right:0; top:50%; height:4px; margin-top:-2px; border-radius:2px; background:rgba(255,255,255,.35); }
-  .fs-seek-band { position:absolute; top:50%; height:6px; margin-top:-3px; border-radius:3px; background:var(--accent); opacity:.95; pointer-events:none; }
-  .fs-seek-wrap input[type=range] { position:absolute; inset:0; width:100%; height:100%; margin:0; background:transparent; -webkit-appearance:none; appearance:none; touch-action:none; }
-  .fs-seek-wrap input[type=range]::-webkit-slider-runnable-track { height:28px; background:transparent; }
-  .fs-seek-wrap input[type=range]::-moz-range-track { height:28px; background:transparent; }
-  .fs-seek-wrap input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; margin-top:4px; border-radius:50%; background:#fff; border:0; box-shadow:0 1px 4px rgba(0,0,0,.5); }
-  .fs-seek-wrap input[type=range]::-moz-range-thumb { width:20px; height:20px; border-radius:50%; background:#fff; border:0; box-shadow:0 1px 4px rgba(0,0,0,.5); }
-  .fs-progress { display:none; position:absolute; left:0; bottom:0; height:3px; width:0; z-index:19; background:var(--accent); pointer-events:none; }
-  .stage.full.is-playing .fs-progress, .stage:fullscreen.is-playing .fs-progress, .stage:-webkit-full-screen.is-playing .fs-progress { display:block; }
+  /* ===== full screen: control strip below the picture (timeline left, buttons right) ===== */
+  .stage { --fs-h:52px; }
+  .stage.full video, .stage.full #ytHost, .stage.full iframe, .stage.full .shield, .stage.full .placeholder,
+  .stage:fullscreen video, .stage:fullscreen #ytHost, .stage:fullscreen iframe, .stage:fullscreen .shield, .stage:fullscreen .placeholder,
+  .stage:-webkit-full-screen video, .stage:-webkit-full-screen #ytHost, .stage:-webkit-full-screen iframe, .stage:-webkit-full-screen .shield, .stage:-webkit-full-screen .placeholder
+    { top:0; bottom:auto; height:calc(100% - var(--fs-h) - env(safe-area-inset-bottom)); }
+  .fs-bar { display:none; position:absolute; left:0; right:0; bottom:0; z-index:20; box-sizing:border-box;
+    height:calc(var(--fs-h) + env(safe-area-inset-bottom)); padding:9px 12px calc(9px + env(safe-area-inset-bottom));
+    background:#0d1117; border-top:1px solid rgba(255,255,255,.14); align-items:center; gap:14px; }
+  .stage.full .fs-bar, .stage:fullscreen .fs-bar, .stage:-webkit-full-screen .fs-bar { display:flex; }
+  .fs-seek { flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:8px; color:#c9d1d9; font-size:12px; font-variant-numeric:tabular-nums; }
+  .fs-seek span { flex:none; min-width:38px; text-align:center; }
+  .fs-tl { position:relative; flex:1; height:32px; background:var(--field); border:1px solid var(--line-strong); border-radius:8px; cursor:pointer; touch-action:none; }
+  .fs-region { position:absolute; top:0; bottom:0; background:rgba(36,87,214,.14); border-top:2px solid var(--accent); border-bottom:2px solid var(--accent); pointer-events:none; }
+  .fs-head { position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--mark); pointer-events:none; }
+  .fs-btns { flex:none; display:flex; gap:8px; }
+  .fs-bar button { flex:none; height:34px; padding:0 16px; border:none; border-radius:8px; font-size:13px; font-weight:600; font-family:inherit;
+    background:rgba(255,255,255,.92); color:#18212d; cursor:pointer; white-space:nowrap; }
+  .fs-bar button.fs-primary { background:var(--accent); color:#fff; }
+  .fs-bar #fsLoop { display:flex; align-items:center; gap:8px; }
+  .fs-bar .ios-switch.mini { width:36px; height:22px; border-radius:11px; }
+  .fs-bar .ios-switch.mini .knob { width:18px; height:18px; }
+  .fs-bar .ios-switch.mini.on .knob { transform:translateX(14px); }
+  @media (max-width:620px) {
+    .stage { --fs-h:92px; }
+    .fs-bar { flex-direction:column; align-items:stretch; gap:8px; padding-top:8px; }
+    .fs-btns { display:flex; }
+    .fs-bar button { flex:1 1 0; min-width:0; padding:0 6px; }
+    .fs-bar #fsLoop { justify-content:center; gap:6px; }
+  }
 </style>
 </head>
 <body>
@@ -327,16 +313,17 @@
     <video id="video" class="hidden" playsinline controls></video>
     <div class="placeholder" id="placeholder">下の欄にURLを入れるか、登録リストから選んでください</div>
     <button class="fs-open" id="fsBtn" type="button" aria-label="全画面表示">⤢ 全画面（F）</button>
-    <div class="fs-progress" id="fsProgress"></div>
     <div class="fs-bar">
       <div class="fs-seek">
         <span id="fsCur">0:00.0</span>
-        <div class="fs-seek-wrap"><div class="fs-seek-trk"></div><div class="fs-seek-band" id="fsBand"></div><input type="range" id="fsSeek" min="0" max="1000" step="1" value="0" aria-label="再生位置"></div>
+        <div class="fs-tl" id="fsTl"><div class="fs-region" id="fsBand"></div><div class="fs-head" id="fsHead"></div></div>
         <span id="fsDur">0:00.0</span>
       </div>
-      <button type="button" class="fs-primary" id="fsPlay">再生</button>
-      <button type="button" id="fsLoop" role="switch" aria-checked="true"><span>リピート</span><span class="ios-switch on mini"><span class="knob"></span></span></button>
-      <button type="button" id="fsClose">閉じる ✕</button>
+      <div class="fs-btns">
+        <button type="button" class="fs-primary" id="fsPlay">再生</button>
+        <button type="button" id="fsLoop" role="switch" aria-checked="true"><span>リピート</span><span class="ios-switch on mini"><span class="knob"></span></span></button>
+        <button type="button" id="fsClose">閉じる ✕</button>
+      </div>
     </div>
   </div>
   <div class="hint hidden" id="ytHint" style="margin:-6px 0 14px">このiPhoneでは、最初の1回だけ、動画の中央の▶を直接タップして再生を始めてください。始まると自動で保護がかかり、以降は下の「再生」ボタン（または動画のタップ）で操作できます。</div>
@@ -443,14 +430,14 @@
   </div>
     <div class="name-row"><label class="cap" for="saveName">登録名（任意。空欄なら動画タイトル）</label><input type="text" id="saveName" maxlength="60" placeholder="例：套路 第一段 ゆっくり" autocomplete="off"></div>
   </details>
-  <div class="ver">ver 20261124-v</div>
+  <div class="ver">ver 20261124-w</div>
 </div>
 <pre id="dbg" class="hidden"></pre>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const BUILD = '20261124-v';
+  const BUILD = '20261124-w';
   // diagnostics: open the page with ?debug=1 to see a live event log at the bottom
   const DEBUG = /[?&]debug=1/.test(location.search);
   const dbgEl = $('dbg'), dbgLines = [], t00 = Date.now();
@@ -1059,20 +1046,23 @@
   setTimeout(() => { if (!ytApiReady && apiTries < 2) injectYtApi(); }, 6000);
   setTimeout(() => { if (!ytApiReady && apiTries < 3) injectYtApi(); }, 14000);
 
-  // ---------- full-screen seek bar ----------
-  const fsSeek = $('fsSeek');
+  // ---------- full-screen timeline (same look as the normal one): tap or drag to move ----------
+  const fsTl = $('fsTl');
   let fsSeeking = false, fsLastSeek = 0;
-  const fsSeekTo = final => {
+  const fsFrac = e => { const r = fsTl.getBoundingClientRect(); return clamp((e.clientX - r.left) / r.width, 0, 1); };
+  const fsSeekTo = (e, final) => {
     if (!duration) return;
-    const t = clamp(fsSeek.value / 1000 * duration, 0, duration);
+    const f = fsFrac(e), t = f * duration;
+    $('fsHead').style.left = (f * 100) + '%';
     $('fsCur').textContent = fmt(t);
     const now = Date.now();
     if (final || now - fsLastSeek > 120) { fsLastSeek = now; P.seek(t); }
   };
-  fsSeek.addEventListener('pointerdown', () => { fsSeeking = true; });
-  fsSeek.addEventListener('input', () => { fsSeeking = true; fsSeekTo(false); });
-  fsSeek.addEventListener('change', () => { fsSeekTo(true); setTimeout(() => { fsSeeking = false; }, 250); });
-  ['pointerup', 'pointercancel'].forEach(ev => fsSeek.addEventListener(ev, () => setTimeout(() => { fsSeeking = false; }, 250)));
+  const fsEnd = () => setTimeout(() => { fsSeeking = false; }, 250);
+  fsTl.addEventListener('pointerdown', e => { fsSeeking = true; try { fsTl.setPointerCapture(e.pointerId); } catch (x) {} fsSeekTo(e, false); });
+  fsTl.addEventListener('pointermove', e => { if (fsSeeking) fsSeekTo(e, false); });
+  fsTl.addEventListener('pointerup', e => { if (fsSeeking) fsSeekTo(e, true); fsEnd(); });
+  fsTl.addEventListener('pointercancel', fsEnd);
 
   // ---------- loop watcher (also drives the playhead) ----------
   setInterval(() => {
@@ -1080,11 +1070,10 @@
     const t = P.time();
     playhead.style.left = (clamp(t / duration, 0, 1) * 100) + '%';
     $('labelNow').textContent = fmt(t);
-    if (inFull()) {                                   // keep the full-screen seek bar and progress line in step
+    if (inFull()) {                                   // keep the full-screen timeline in step
       const frac = clamp(t / duration, 0, 1);
-      if (!fsSeeking) { fsSeek.value = Math.round(frac * 1000); $('fsCur').textContent = fmt(t); }
+      if (!fsSeeking) { $('fsHead').style.left = (frac * 100) + '%'; $('fsCur').textContent = fmt(t); }
       $('fsDur').textContent = fmt(duration);
-      $('fsProgress').style.width = (frac * 100) + '%';
       const [bs, be] = getRange();
       const band = $('fsBand');
       band.style.left = (clamp(bs / duration, 0, 1) * 100) + '%';

@@ -174,7 +174,7 @@
   .io-row { display:flex; gap:6px; margin-top:12px; }
   .io-row .small-btn { flex:1; padding:9px 0; text-align:center; }
 
-  /* ===== compact layout (20261124-w): keep the registered list close to the player ===== */
+  /* ===== compact layout (20261124-x): keep the registered list close to the player ===== */
   .brand { margin-bottom:10px; padding-bottom:10px; }
   .stage { margin-bottom:8px; }
   .timeline-wrap { margin-bottom:8px; }
@@ -291,12 +291,19 @@
   .fs-bar .ios-switch.mini { width:36px; height:22px; border-radius:11px; }
   .fs-bar .ios-switch.mini .knob { width:18px; height:18px; }
   .fs-bar .ios-switch.mini.on .knob { transform:translateX(14px); }
-  @media (max-width:620px) {
+  @media (max-width:620px) and (orientation:portrait) {
     .stage { --fs-h:92px; }
     .fs-bar { flex-direction:column; align-items:stretch; gap:8px; padding-top:8px; }
     .fs-btns { display:flex; }
     .fs-bar button { flex:1 1 0; min-width:0; padding:0 6px; }
     .fs-bar #fsLoop { justify-content:center; gap:6px; }
+  }
+  @media (orientation:landscape) and (max-width:700px) {
+    .fs-bar { gap:8px; padding-left:8px; padding-right:8px; }
+    .fs-bar button { padding:0 10px; }
+    .fs-btns { gap:5px; }
+    .fs-seek { gap:5px; }
+    .fs-seek span { min-width:30px; font-size:11px; }
   }
 </style>
 </head>
@@ -430,14 +437,14 @@
   </div>
     <div class="name-row"><label class="cap" for="saveName">登録名（任意。空欄なら動画タイトル）</label><input type="text" id="saveName" maxlength="60" placeholder="例：套路 第一段 ゆっくり" autocomplete="off"></div>
   </details>
-  <div class="ver">ver 20261124-w</div>
+  <div class="ver">ver 20261124-x</div>
 </div>
 <pre id="dbg" class="hidden"></pre>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const BUILD = '20261124-w';
+  const BUILD = '20261124-x';
   // diagnostics: open the page with ?debug=1 to see a live event log at the bottom
   const DEBUG = /[?&]debug=1/.test(location.search);
   const dbgEl = $('dbg'), dbgLines = [], t00 = Date.now();

@@ -174,7 +174,7 @@
   .io-row { display:flex; gap:6px; margin-top:12px; }
   .io-row .small-btn { flex:1; padding:9px 0; text-align:center; }
 
-  /* ===== compact layout (20261124-x): keep the registered list close to the player ===== */
+  /* ===== compact layout (20261124-y): keep the registered list close to the player ===== */
   .brand { margin-bottom:10px; padding-bottom:10px; }
   .stage { margin-bottom:8px; }
   .timeline-wrap { margin-bottom:8px; }
@@ -274,6 +274,8 @@
   .stage:fullscreen video, .stage:fullscreen #ytHost, .stage:fullscreen iframe, .stage:fullscreen .shield, .stage:fullscreen .placeholder,
   .stage:-webkit-full-screen video, .stage:-webkit-full-screen #ytHost, .stage:-webkit-full-screen iframe, .stage:-webkit-full-screen .shield, .stage:-webkit-full-screen .placeholder
     { top:0; bottom:auto; height:calc(100% - var(--fs-h) - env(safe-area-inset-bottom)); }
+  /* the iframe lives inside #ytHost, which is already shortened: fill it, don't subtract the strip twice */
+  .stage.full #ytHost iframe, .stage:fullscreen #ytHost iframe, .stage:-webkit-full-screen #ytHost iframe { top:0; height:100%; }
   .fs-bar { display:none; position:absolute; left:0; right:0; bottom:0; z-index:20; box-sizing:border-box;
     height:calc(var(--fs-h) + env(safe-area-inset-bottom)); padding:9px 12px calc(9px + env(safe-area-inset-bottom));
     background:#0d1117; border-top:1px solid rgba(255,255,255,.14); align-items:center; gap:14px; }
@@ -437,14 +439,14 @@
   </div>
     <div class="name-row"><label class="cap" for="saveName">登録名（任意。空欄なら動画タイトル）</label><input type="text" id="saveName" maxlength="60" placeholder="例：套路 第一段 ゆっくり" autocomplete="off"></div>
   </details>
-  <div class="ver">ver 20261124-x</div>
+  <div class="ver">ver 20261124-y</div>
 </div>
 <pre id="dbg" class="hidden"></pre>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const BUILD = '20261124-x';
+  const BUILD = '20261124-y';
   // diagnostics: open the page with ?debug=1 to see a live event log at the bottom
   const DEBUG = /[?&]debug=1/.test(location.search);
   const dbgEl = $('dbg'), dbgLines = [], t00 = Date.now();

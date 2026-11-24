@@ -184,7 +184,7 @@
   .io-row { display:flex; gap:6px; margin-top:12px; }
   .io-row .small-btn { flex:1; padding:9px 0; text-align:center; }
 
-  /* ===== compact layout (20261121-u): keep the registered list close to the player ===== */
+  /* ===== compact layout (20261124-v): keep the registered list close to the player ===== */
   .brand { margin-bottom:10px; padding-bottom:10px; }
   .stage { margin-bottom:8px; }
   .timeline-wrap { margin-bottom:8px; }
@@ -297,6 +297,21 @@
   .ul-row { padding:6px 2px; border-top:1px solid var(--line); }
   .ul-name { font-size:13px; font-weight:600; }
   .ul-link { display:block; font-size:12px; color:var(--accent); word-break:break-all; }
+
+  /* full screen: seek bar (visible with the buttons) + thin progress line while playing */
+  .fs-bar { flex-wrap:wrap; }
+  .fs-seek { flex:0 1 100%; max-width:760px; margin:0 auto; display:flex; align-items:center; gap:8px; color:#fff; font-size:12px; font-variant-numeric:tabular-nums; }
+  .fs-seek span { flex:none; min-width:44px; text-align:center; text-shadow:0 1px 2px rgba(0,0,0,.6); }
+  .fs-seek-wrap { position:relative; flex:1; height:28px; }
+  .fs-seek-trk { position:absolute; left:0; right:0; top:50%; height:4px; margin-top:-2px; border-radius:2px; background:rgba(255,255,255,.35); }
+  .fs-seek-band { position:absolute; top:50%; height:6px; margin-top:-3px; border-radius:3px; background:var(--accent); opacity:.95; pointer-events:none; }
+  .fs-seek-wrap input[type=range] { position:absolute; inset:0; width:100%; height:100%; margin:0; background:transparent; -webkit-appearance:none; appearance:none; touch-action:none; }
+  .fs-seek-wrap input[type=range]::-webkit-slider-runnable-track { height:28px; background:transparent; }
+  .fs-seek-wrap input[type=range]::-moz-range-track { height:28px; background:transparent; }
+  .fs-seek-wrap input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; margin-top:4px; border-radius:50%; background:#fff; border:0; box-shadow:0 1px 4px rgba(0,0,0,.5); }
+  .fs-seek-wrap input[type=range]::-moz-range-thumb { width:20px; height:20px; border-radius:50%; background:#fff; border:0; box-shadow:0 1px 4px rgba(0,0,0,.5); }
+  .fs-progress { display:none; position:absolute; left:0; bottom:0; height:3px; width:0; z-index:19; background:var(--accent); pointer-events:none; }
+  .stage.full.is-playing .fs-progress, .stage:fullscreen.is-playing .fs-progress, .stage:-webkit-full-screen.is-playing .fs-progress { display:block; }
 </style>
 </head>
 <body>
@@ -312,7 +327,13 @@
     <video id="video" class="hidden" playsinline controls></video>
     <div class="placeholder" id="placeholder">下の欄にURLを入れるか、登録リストから選んでください</div>
     <button class="fs-open" id="fsBtn" type="button" aria-label="全画面表示">⤢ 全画面（F）</button>
+    <div class="fs-progress" id="fsProgress"></div>
     <div class="fs-bar">
+      <div class="fs-seek">
+        <span id="fsCur">0:00.0</span>
+        <div class="fs-seek-wrap"><div class="fs-seek-trk"></div><div class="fs-seek-band" id="fsBand"></div><input type="range" id="fsSeek" min="0" max="1000" step="1" value="0" aria-label="再生位置"></div>
+        <span id="fsDur">0:00.0</span>
+      </div>
       <button type="button" class="fs-primary" id="fsPlay">再生</button>
       <button type="button" id="fsLoop" role="switch" aria-checked="true"><span>リピート</span><span class="ios-switch on mini"><span class="knob"></span></span></button>
       <button type="button" id="fsClose">閉じる ✕</button>
@@ -422,14 +443,14 @@
   </div>
     <div class="name-row"><label class="cap" for="saveName">登録名（任意。空欄なら動画タイトル）</label><input type="text" id="saveName" maxlength="60" placeholder="例：套路 第一段 ゆっくり" autocomplete="off"></div>
   </details>
-  <div class="ver">ver 20261121-u</div>
+  <div class="ver">ver 20261124-v</div>
 </div>
 <pre id="dbg" class="hidden"></pre>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const BUILD = '20261121-u';
+  const BUILD = '20261124-v';
   // diagnostics: open the page with ?debug=1 to see a live event log at the bottom
   const DEBUG = /[?&]debug=1/.test(location.search);
   const dbgEl = $('dbg'), dbgLines = [], t00 = Date.now();
@@ -1038,12 +1059,37 @@
   setTimeout(() => { if (!ytApiReady && apiTries < 2) injectYtApi(); }, 6000);
   setTimeout(() => { if (!ytApiReady && apiTries < 3) injectYtApi(); }, 14000);
 
+  // ---------- full-screen seek bar ----------
+  const fsSeek = $('fsSeek');
+  let fsSeeking = false, fsLastSeek = 0;
+  const fsSeekTo = final => {
+    if (!duration) return;
+    const t = clamp(fsSeek.value / 1000 * duration, 0, duration);
+    $('fsCur').textContent = fmt(t);
+    const now = Date.now();
+    if (final || now - fsLastSeek > 120) { fsLastSeek = now; P.seek(t); }
+  };
+  fsSeek.addEventListener('pointerdown', () => { fsSeeking = true; });
+  fsSeek.addEventListener('input', () => { fsSeeking = true; fsSeekTo(false); });
+  fsSeek.addEventListener('change', () => { fsSeekTo(true); setTimeout(() => { fsSeeking = false; }, 250); });
+  ['pointerup', 'pointercancel'].forEach(ev => fsSeek.addEventListener(ev, () => setTimeout(() => { fsSeeking = false; }, 250)));
+
   // ---------- loop watcher (also drives the playhead) ----------
   setInterval(() => {
     if (!mode || !duration) return;
     const t = P.time();
     playhead.style.left = (clamp(t / duration, 0, 1) * 100) + '%';
     $('labelNow').textContent = fmt(t);
+    if (inFull()) {                                   // keep the full-screen seek bar and progress line in step
+      const frac = clamp(t / duration, 0, 1);
+      if (!fsSeeking) { fsSeek.value = Math.round(frac * 1000); $('fsCur').textContent = fmt(t); }
+      $('fsDur').textContent = fmt(duration);
+      $('fsProgress').style.width = (frac * 100) + '%';
+      const [bs, be] = getRange();
+      const band = $('fsBand');
+      band.style.left = (clamp(bs / duration, 0, 1) * 100) + '%';
+      band.style.width = (Math.max(0, clamp(be / duration, 0, 1) - clamp(bs / duration, 0, 1)) * 100) + '%';
+    }
     if (!loopOn || !P.playing()) return;      // repeat OFF = ordinary playback, segment ignored
     const [s, e] = getRange();
     if (e > s && t >= e) P.seek(s);

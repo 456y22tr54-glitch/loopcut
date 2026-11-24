@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230d1117'/%3E%3Cpath d='M46 23A17 17 0 0 0 16 27' fill='none' stroke='%232457d6' stroke-width='6' stroke-linecap='round'/%3E%3Cpath d='M18 41A17 17 0 0 0 48 37' fill='none' stroke='%232457d6' stroke-width='6' stroke-linecap='round'/%3E%3Cpath d='M52 14v14H38z' fill='%232457d6'/%3E%3Cpath d='M12 50V36h14z' fill='%232457d6'/%3E%3Cpath d='M27 24l14 8-14 8z' fill='%23e8590c'/%3E%3C/svg%3E">
 <title>LOOPCUT — Segment Repeat Player</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
@@ -174,7 +175,7 @@
   .io-row { display:flex; gap:6px; margin-top:12px; }
   .io-row .small-btn { flex:1; padding:9px 0; text-align:center; }
 
-  /* ===== compact layout (20261124-y): keep the registered list close to the player ===== */
+  /* ===== compact layout (20261124-z): keep the registered list close to the player ===== */
   .brand { margin-bottom:10px; padding-bottom:10px; }
   .stage { margin-bottom:8px; }
   .timeline-wrap { margin-bottom:8px; }
@@ -293,6 +294,14 @@
   .fs-bar .ios-switch.mini { width:36px; height:22px; border-radius:11px; }
   .fs-bar .ios-switch.mini .knob { width:18px; height:18px; }
   .fs-bar .ios-switch.mini.on .knob { transform:translateX(14px); }
+  /* strip on/off */
+  .fs-tog { display:none; position:absolute; z-index:30; top:8px; right:max(8px, env(safe-area-inset-right)); padding:6px 10px; border:none; border-radius:8px;
+    background:rgba(13,17,23,.62); color:#fff; font-size:11px; font-weight:600; font-family:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .stage.full .fs-tog, .stage:fullscreen .fs-tog, .stage:-webkit-full-screen .fs-tog { display:block; }
+  .stage.bar-off .fs-bar { display:none !important; }
+  .stage.bar-off.full video, .stage.bar-off.full #ytHost, .stage.bar-off.full .shield, .stage.bar-off.full .placeholder,
+  .stage.bar-off:fullscreen video, .stage.bar-off:fullscreen #ytHost, .stage.bar-off:fullscreen .shield, .stage.bar-off:fullscreen .placeholder,
+  .stage.bar-off:-webkit-full-screen video, .stage.bar-off:-webkit-full-screen #ytHost, .stage.bar-off:-webkit-full-screen .shield, .stage.bar-off:-webkit-full-screen .placeholder { height:100%; }
   @media (max-width:620px) and (orientation:portrait) {
     .stage { --fs-h:92px; }
     .fs-bar { flex-direction:column; align-items:stretch; gap:8px; padding-top:8px; }
@@ -322,6 +331,7 @@
     <video id="video" class="hidden" playsinline controls></video>
     <div class="placeholder" id="placeholder">下の欄にURLを入れるか、登録リストから選んでください</div>
     <button class="fs-open" id="fsBtn" type="button" aria-label="全画面表示">⤢ 全画面（F）</button>
+    <button class="fs-tog" id="fsTog" type="button" aria-pressed="true">操作バー：表示</button>
     <div class="fs-bar">
       <div class="fs-seek">
         <span id="fsCur">0:00.0</span>
@@ -439,14 +449,14 @@
   </div>
     <div class="name-row"><label class="cap" for="saveName">登録名（任意。空欄なら動画タイトル）</label><input type="text" id="saveName" maxlength="60" placeholder="例：套路 第一段 ゆっくり" autocomplete="off"></div>
   </details>
-  <div class="ver">ver 20261124-y</div>
+  <div class="ver">ver 20261124-z</div>
 </div>
 <pre id="dbg" class="hidden"></pre>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const BUILD = '20261124-y';
+  const BUILD = '20261124-z';
   // diagnostics: open the page with ?debug=1 to see a live event log at the bottom
   const DEBUG = /[?&]debug=1/.test(location.search);
   const dbgEl = $('dbg'), dbgLines = [], t00 = Date.now();
@@ -766,6 +776,17 @@
   }
   ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => { if (!nativeFsOn() && !pseudoFull) video.controls = true; }));
   const swallow = fn => e => { e.stopPropagation(); e.preventDefault(); fn(); };
+  // strip on/off (remembered)
+  const fsTog = $('fsTog');
+  function setBar(on) {
+    stageEl.classList.toggle('bar-off', !on);
+    fsTog.textContent = on ? '操作バー：表示' : '操作バー：非表示';
+    fsTog.setAttribute('aria-pressed', on ? 'true' : 'false');
+    try { localStorage.setItem('loopcut.fsbar.v1', on ? '1' : '0'); } catch (e) {}
+  }
+  let barOn = true; try { barOn = localStorage.getItem('loopcut.fsbar.v1') !== '0'; } catch (e) {}
+  setBar(barOn);
+  fsTog.addEventListener('click', swallow(() => setBar(stageEl.classList.contains('bar-off'))));
   fsBtn.addEventListener('click', swallow(enterFull));
   fsClose.addEventListener('click', swallow(exitFull));
   fsPlay.addEventListener('click', () => playBtn.click());
